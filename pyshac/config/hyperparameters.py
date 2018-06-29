@@ -113,6 +113,18 @@ class AbstractHyperParameter(ABC):
 
     @classmethod
     def load_from_config(cls, config):
+        """
+        Utilizes the provided config to instantiate a new
+        instance of the class with the same arguments.
+
+        # Arguments:
+            config (dict): A dictionary having keys as the argument names
+                and values as the values specified to the class using its
+                constructor.
+
+        # Returns:
+            A new instance of this class with the correct arguments.
+        """
         return cls(**config)
 
     def _build_maps(self, values):

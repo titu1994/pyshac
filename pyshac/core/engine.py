@@ -127,10 +127,10 @@ class _SHAC(ABC):
         >>> eval = lambda id, params: np.exp(params['x'])
         >>> shac = SHAC(eval, params, total_budget=100, num_batches=10)
 
-        >>> shac.num_parallel_generators = 20  # change the number of generator process
-        >>> shac.num_parallel_evaluators = 1  # change the number of evaluator processes
-        >>> shac.generator_backend = 'multiprocessing'  # change the backend for the generator
-        >>> shac.evaluator_backend = 'threading'  # change the backend of the evaluator
+        >>> shac.set_num_parallel_generators(20)  # change the number of generator process
+        >>> shac.set_num_parallel_evaluators(1)  # change the number of evaluator processes
+        >>> shac.generator_backend = 'multiprocessing'  # change the backend for the generator (default is `multiprocessing`)
+        >>> shac.concurrent_evaluators()  # change the backend of the evaluator to use `threading`
         ```
 
         Has an adaptive behaviour based on what epoch it is on, since later epochs require

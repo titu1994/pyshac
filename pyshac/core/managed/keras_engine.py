@@ -69,7 +69,6 @@ class KerasSHAC(optimizer._SHAC):
         if self.max_gpu_evaluators == 0:  # CPU only
             # By default, allow only 1 evaluation at a time
             self.num_parallel_evaluators = max_cpu_evaluators
-            self.evaluator_backend = 'multiprocessing'
         else:
             # CPU and GPU. Limit number of parallel GPU calls
             self.num_parallel_evaluators = max_gpu_evaluators

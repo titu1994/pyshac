@@ -10,10 +10,10 @@ matrix:
 # command to install dependencies
 install:
   - pip install -r requirements.txt
-  - pip install tensorflow
-  - python setup.py install
+  - pip install tensorflow keras
 # command to run tests
 script:
+  - python setup.py install
   - python -c "import keras.backend"
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"

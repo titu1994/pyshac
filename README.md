@@ -4,6 +4,8 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/titu1994/pyshac/badge.svg?branch=master)](https://coveralls.io/github/titu1994/pyshac?branch=master)
 
+[![Documentation Status](//readthedocs.org/projects/pyshac/badge/?version=latest)](https://pyshac.readthedocs.io/en/latest/?badge=latest)
+
 PySHAC is a python library to use the Sequential Halving and Classification algorithm from the paper
 [Parallel Architecture and Hyperparameter Search via Successive Halving and Classification](https://arxiv.org/abs/1805.10255) with ease.
 

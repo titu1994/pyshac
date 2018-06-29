@@ -7,6 +7,13 @@ import numpy as np
 from pyshac.config import hyperparameters as hp, data
 
 
+# compatible with both Python 2 and 3
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
+
 def deterministic_test(func):
     @six.wraps(func)
     def wrapper(*args, **kwargs):

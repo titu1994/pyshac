@@ -34,5 +34,13 @@ setup(
                       'joblib>=0.11',
                       'six>=1.11.0',
                       'xgboost>=0.72'],
+    classifiers=(
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+    ),
     zip_safe=False,
 )

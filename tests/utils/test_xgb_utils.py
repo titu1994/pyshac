@@ -9,6 +9,13 @@ from pyshac.config import hyperparameters as hp, data
 from pyshac.utils import xgb_utils
 
 
+# compatible with both Python 2 and 3
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
+
 warnings.simplefilter('ignore')
 
 

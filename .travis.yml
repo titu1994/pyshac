@@ -11,6 +11,7 @@ matrix:
 install:
   - pip install -r requirements.txt
   - pip install tensorflow
+  - python setup.py install
 # command to run tests
 script:
   - python -c "import keras.backend"

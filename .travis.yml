@@ -10,7 +10,7 @@ matrix:
 # command to install dependencies
 install:
   - pip install tensorflow keras
-  - pip install coverage python-coverage
+  - pip install converalls python-coverage
   - python setup.py install
 # command to run tests
 script:

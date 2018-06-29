@@ -213,7 +213,7 @@ def test_shac_simple():
     # training
     shac.fit()
 
-    assert len(shac.classifiers) == shac.total_classifiers
+    assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')
     assert os.path.exists('shac/classifiers/classifiers.pkl')
 
@@ -391,7 +391,7 @@ def test_shac_simple_torch():
     # training
     shac.fit()
 
-    assert len(shac.classifiers) == shac.total_classifiers
+    assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')
     assert os.path.exists('shac/classifiers/classifiers.pkl')
 

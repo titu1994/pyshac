@@ -2,8 +2,9 @@
 
 [![Build Status](https://travis-ci.com/titu1994/pyshac.svg?token=Kpa1jkwxwsMcnGRBC8S2&branch=master)](https://travis-ci.com/titu1994/pyshac)
 [![Coverage Status](https://coveralls.io/repos/github/titu1994/pyshac/badge.svg?branch=master)](https://coveralls.io/github/titu1994/pyshac?branch=master)
-<a href='https://pyshac.readthedocs.io/en/latest/?badge=latest'>
-    <img src='//readthedocs.org/projects/pyshac/badge/?version=latest' alt='Documentation Status' />
+
+<a href='http://titu1994.github.io/pyshac/'>
+    <img src='https://readthedocs.org/projects/pyshac/badge/?version=latest' alt='Documentation Status' />
 </a>
 
 
@@ -41,7 +42,7 @@ pip install -r "doc_requirements.txt"
 
 ## Documentation
 
-Documentation can be found at [doc location]().
+Documentation can be found at [doc location](http://titu1994.github.io/pyshac/).
 
 It contains a User Guide, as well as explanation of the different engines that can be used with PySHAC.
 

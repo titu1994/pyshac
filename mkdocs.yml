@@ -9,7 +9,7 @@ theme:
   feature:
     tabs: false
 docs_dir: docs/sources
-repo_name: 'titu1994/pyshac'
+repo_name: 'Github'
 repo_url: https://github.com/titu1994/pyshac
 # site_url: # TODO
 site_description: 'Documentation for PySHAC, the Python library for Sequential Halving and Classification.'

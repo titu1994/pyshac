@@ -162,4 +162,5 @@ Examples based on the `Branin` and `Hartmann6` problems can be found in the [Exa
 An example of how to use the `TensorflowSHAC` engine is provided [in the example foldes as well](https://github.com/titu1994/pyshac/tree/master/examples/tensorflow).
 
 Comparison scripts of basic optimization, `Branin` and `Hartmann6` using Tensorflow Eager 1.8 are provided in the respective folders.
+
 ----

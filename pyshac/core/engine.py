@@ -1,5 +1,6 @@
 import os
 import warnings
+import multiprocessing
 from abc import ABCMeta, abstractmethod
 from joblib import Parallel, delayed
 
@@ -14,8 +15,14 @@ warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', FutureWarning)
 
 
-# compatible with Python 2 *and* 3:
+# compatible with Python 2 and 3:
 ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
+
+# compatible with both Python 2 and 3
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
 
 
 class _SHAC(ABC):
@@ -432,7 +439,7 @@ class _SHAC(ABC):
         Compute the number of threads / processes allocated to the generators and the
         evaluators.
         """
-        cpu_count = os.cpu_count()
+        cpu_count = multiprocessing.cpu_count()
         if self.num_workers > cpu_count:
             warnings.warn("Number of workers exceeds %d cores on device. Reducing parallel "
                           "number of cores used to prevent resource starvation." % (cpu_count))
@@ -601,7 +608,7 @@ class _SHAC(ABC):
 
         """
         if val is None:
-            cpu_count = os.cpu_count()
+            cpu_count = multiprocessing.cpu_count()
 
             if self.num_workers > cpu_count:
                 warnings.warn("Number of workers exceeds %d cores on device. Reducing parallel "
@@ -631,7 +638,7 @@ class _SHAC(ABC):
     @num_parallel_evaluators.setter
     def num_parallel_evaluators(self, val):
         if val is None:
-            cpu_count = os.cpu_count()
+            cpu_count = multiprocessing.cpu_count()
 
             if self.num_workers > cpu_count:
                 warnings.warn("Number of workers exceeds %d cores on device. Reducing parallel "

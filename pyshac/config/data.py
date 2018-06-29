@@ -8,6 +8,13 @@ from collections import OrderedDict
 import pyshac.config.hyperparameters as hp
 
 
+# compatible with both Python 2 and 3
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
+
 class Dataset(object):
     """Dataset manager for the engines.
 

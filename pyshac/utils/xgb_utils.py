@@ -7,6 +7,13 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 import warnings
 
 
+# compatible with both Python 2 and 3
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
+
 def get_classifier(num_trees=200, n_jobs=1, seed=None):
     """
 

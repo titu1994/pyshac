@@ -1,8 +1,4 @@
-import os
-import warnings
-import pyshac.config.hyperparameters as hp
 import pyshac.core.engine as optimizer
-
 from keras import backend as K
 
 

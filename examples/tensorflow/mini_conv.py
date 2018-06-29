@@ -11,7 +11,7 @@ np.random.seed(0)
 tf.set_random_seed(0)
 
 """
-Finds good parameters for a simple 2 layered MLP for fassion mnist.
+Finds good parameters for a basic_opt 2 layered MLP for fassion mnist.
 """
 
 

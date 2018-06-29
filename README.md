@@ -132,13 +132,13 @@ In these cases, we can utilize a few arguments to allow the training behaviour t
 These parameters are :
 
 - **skip_cv_checks**: As it suggests, if the number of samples per batch is too small, it is preferable to skip the cross validation check, as most classifiers will not pass them.
-- **early_stopping**: Determines whether training should halt as soon as an epoch of failed learning occurs. This is useful when evaluations are very costly.
+- **early_stop**: Determines whether training should halt as soon as an epoch of failed learning occurs. This is useful when evaluations are very costly.
 - **relax_checks**: This will instead relax the constrain of having the sample pass through all classifiers to having the classifier past through most of the classifiers. In doing so, more samples can be obtained for the same search space.
 
 ```python
 
 # `early stopping` default is False, and it is preferred not to use it when using `relax checks`
-shac.fit(skip_cv_checks=True, early_stopping=False, relax_checks=True)
+shac.fit(skip_cv_checks=True, early_stop=False, relax_checks=True)
 ```
 
 ### Sampling the best hyper parameters
@@ -161,4 +161,5 @@ Examples based on the `Branin` and `Hartmann6` problems can be found in the [Exa
 
 An example of how to use the `TensorflowSHAC` engine is provided [in the example foldes as well](https://github.com/titu1994/pyshac/tree/master/examples/tensorflow).
 
+Comparison scripts of basic optimization, `Branin` and `Hartmann6` using Tensorflow Eager 1.8 are provided in the respective folders.
 ----

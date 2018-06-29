@@ -1,9 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 import sys
 import inspect
 import numpy as np
 import uuid
+
+
+# compatible with Python 2 *and* 3:
+ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
 
 
 _CUSTOM_PARAMETERS = OrderedDict()

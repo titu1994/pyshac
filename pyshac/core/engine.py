@@ -1,6 +1,6 @@
 import os
 import warnings
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from joblib import Parallel, delayed
 
 import numpy as np
@@ -12,6 +12,10 @@ import pyshac.utils.xgb_utils as xgb_utils
 
 warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', FutureWarning)
+
+
+# compatible with Python 2 *and* 3:
+ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
 
 
 class _SHAC(ABC):

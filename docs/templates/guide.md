@@ -15,7 +15,7 @@ There are three main processes that are followed when using PySHAC :
 
 - **Training of the models**:
     -   Once the parameters are defined, we create an instance of the engine.
-    -   This engine is passed an evaluation function that the user must write, along with the hyper parameter declarations and other parameters as required (such as total budget and batch size)
+    -   This engine is passed an evaluation function that the user must write, along with the hyper parameter declarations and other parameters as required (such as total budget and number of batches)
     -   The engine's `fit()` method is used to perform training of the classifiers.
     -   Training can be stopped at any time between epochs. All models are serialized at the end of each epoch.
 
@@ -89,15 +89,15 @@ When setting up the SHAC engine, we need to define a few important parameters wh
 - **Evaluation Function**: This is a user defined function, that accepts 2 or more inputs as defined by the engine, and returns a python floating point value.
 - **Hyper Parameter list**: A list of parameters that have been declared. This will constitute the search space.
 - **Total budget**: The number of evaluations that will occur.
-- **Batch size**: The number of samples per batch of evaluation.
+- **Number of batches**: The number of batches per epoch of evaluation.
 - **Objective**: String value which can be either `max` or `min`. Defines whether the objective should be maximised or minimised.
 - **Maximum number of classifiers**: As it suggests, decides the upper limit of how many classifiers can be trained. This is optional, and usually not required to specify.
 
 !!!warning
-    The total budget needs to be divisible by this batch size, since all evaluations need to have the same number of samples.
+    The total budget needs to be divisible by the number of batches, since all evaluations need to have the same number of samples.
     This eases the training of models as well, since we can be sure of how many samples are present after each epoch.
 
-**Evaluation Engine** receives 2 inputs :
+**Evaluation Function** receives 2 inputs :
 
 - **Worker ID**: Integer id that can be left alone when executing only on CPU or used to determine the iteration number in the current epoch of evaluation.
 - **Parameter OrderedDict**: An OrderedDict which contains the (name, value) pairs of the Parameters passed to the engine.
@@ -132,13 +132,13 @@ if __name__ == '__main__':  # this is required for Windows ; not for Unix or Lin
     # define the total budget as 100 evaluations
     total_budget = 100  # 100 evaluations at maximum
 
-    # define the batch size
-    batch_size = 10  # 10 samples per batch
+    # define the number of batches
+    num_batches = 10  # 10 samples per batch
 
     # define the objective
     objective = 'min'  # minimize the squared loss
 
-    shac = pyshac.SHAC(squared_error_loss, parameters, total_budget, batch_size, objective)
+    shac = pyshac.SHAC(squared_error_loss, parameters, total_budget, num_batches, objective)
 ```
 
 While this looks like a lot, these few lines are in essence all that is required to define the search space,
@@ -166,7 +166,7 @@ of the previous classifiers. This allows classifiers to train on the same search
 In these cases, we can utilize a few arguments to allow the training behaviour to better adapt to these circumstances.
 These parameters are :
 
-- **skip_cv_checks**: As it suggests, if the batch size is too small, it is preferable to skip the cross validation check, as most classifiers will not pass them.
+- **skip_cv_checks**: As it suggests, if the number of samples per batch is too small, it is preferable to skip the cross validation check, as most classifiers will not pass them.
 - **early_stopping**: Determines whether training should halt as soon as an epoch of failed learning occurs. This is useful when evaluations are very costly.
 - **relax_checks**: This will instead relax the constrain of having the sample pass through all classifiers to having the classifier past through most of the classifiers. In doing so, more samples can be obtained for the same search space.
 
@@ -179,7 +179,7 @@ shac.fit(skip_cv_checks=True, early_stopping=False, relax_checks=True)
 ## Sampling the best hyper parameters
 
 Once the models have been trained by the engine, it is as simple as calling `predict()` to sample multiple batches of parameters.
-As it is more efficient to sample several batches at once, `predict()` will return an a 'batch size' number of sampled hyper paremeters.
+As it is more efficient to sample several batches at once, `predict()` will return an a number of batches of sampled hyper paremeters.
 
 ```python
 

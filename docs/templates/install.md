@@ -12,10 +12,11 @@ We use the Scikit-Learn Python wrappers for XGBoost, which do not support GPU ex
 themselves are trained on exceedingly small amounts of data, therefore we do not require GPU execution of XGBoost.
 
 - [XGBoost : Install Instructions](https://xgboost.readthedocs.io/en/latest/build.html)
+- Or via pip : `pip install --upgrade xgboost`
 
 !!!warning "Windows Installation"
     For installation of XGBoost on Windows, it is preferred to use the unofficial binaries
-    provided here :
+    provided here if you do not wish to build the project yourself :
 
     [XGBoost : Unofficial Windows Binaries](http://www.picnet.com.au/blogs/guido/2016/09/22/xgboost-windows-x64-binaries-for-download/)
 
@@ -25,7 +26,7 @@ Once the XGBoost package is installed and verifier, we can simply clone this rep
 `python setup.py install` to install this package.
 
 ```
-git clone 
+git clone https://github.com/titu1994/pyshac.git
 cd pyshac
 python setup.py install
 ```

@@ -1,2 +1,2 @@
-# PySHAC : Python Library for Sequential Halving and Classification
+# PySHAC : A Python Library for `Sequential Halving and Classification` Algorithm
 

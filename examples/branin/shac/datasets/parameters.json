@@ -1,0 +1,20 @@
+{
+    "h1": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h1",
+            "min_value": -5.0,
+            "max_value": 10.0,
+            "log_encode": false
+        }
+    ],
+    "h2": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h2",
+            "min_value": 0.0,
+            "max_value": 15.0,
+            "log_encode": false
+        }
+    ]
+}

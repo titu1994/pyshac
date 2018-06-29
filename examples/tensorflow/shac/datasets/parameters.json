@@ -1,0 +1,85 @@
+{
+    "h1": [
+        "DiscreteHyperParameter",
+        {
+            "name": "h1",
+            "values": [
+                8,
+                16,
+                32,
+                48
+            ]
+        }
+    ],
+    "h2": [
+        "DiscreteHyperParameter",
+        {
+            "name": "h2",
+            "values": [
+                8,
+                16,
+                32,
+                48
+            ]
+        }
+    ],
+    "init1": [
+        "DiscreteHyperParameter",
+        {
+            "name": "init1",
+            "values": [
+                "glorot_uniform",
+                "he_uniform"
+            ]
+        }
+    ],
+    "init2": [
+        "DiscreteHyperParameter",
+        {
+            "name": "init2",
+            "values": [
+                "glorot_uniform",
+                "he_uniform"
+            ]
+        }
+    ],
+    "dropout1": [
+        "UniformContinuousHyperParameter",
+        {
+            "min_value": 0.1,
+            "name": "dropout1",
+            "max_value": 0.8,
+            "log_encode": false
+        }
+    ],
+    "dropout2": [
+        "UniformContinuousHyperParameter",
+        {
+            "min_value": 0.1,
+            "name": "dropout2",
+            "max_value": 0.5,
+            "log_encode": false
+        }
+    ],
+    "optimizer": [
+        "DiscreteHyperParameter",
+        {
+            "name": "optimizer",
+            "values": [
+                "adam",
+                "sgd"
+            ]
+        }
+    ],
+    "learning_rate": [
+        "DiscreteHyperParameter",
+        {
+            "name": "learning_rate",
+            "values": [
+                0.01,
+                0.005,
+                0.001
+            ]
+        }
+    ]
+}

@@ -1,0 +1,23 @@
+language: python
+matrix:
+  include:
+    - python: 2.7
+      env: KERAS_BACKEND=tensorflow
+    - python: 3.5
+      env: KERAS_BACKEND=tensorflow
+    - python: 3.6
+      env: KERAS_BACKEND=tensorflow
+# command to install dependencies
+install:
+  - pip install -r requirements.txt
+  - pip install tensorflow
+# command to run tests
+script:
+  - python -c "import keras.backend"
+  - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
+  - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
+  - py.test # or py.test for Python versions 3.5 and below
+notifications:
+  email:
+    on_success: never
+    on_failure: always

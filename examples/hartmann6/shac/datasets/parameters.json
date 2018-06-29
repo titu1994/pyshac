@@ -1,0 +1,56 @@
+{
+    "h1": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h1",
+            "min_value": 0.0,
+            "max_value": 1.0,
+            "log_encode": false
+        }
+    ],
+    "h2": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h2",
+            "min_value": 0.0,
+            "max_value": 1.0,
+            "log_encode": false
+        }
+    ],
+    "h3": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h3",
+            "min_value": 0.0,
+            "max_value": 1.0,
+            "log_encode": false
+        }
+    ],
+    "h4": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h4",
+            "min_value": 0.0,
+            "max_value": 1.0,
+            "log_encode": false
+        }
+    ],
+    "h5": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h5",
+            "min_value": 0.0,
+            "max_value": 1.0,
+            "log_encode": false
+        }
+    ],
+    "h6": [
+        "UniformContinuousHyperParameter",
+        {
+            "name": "h6",
+            "min_value": 0.0,
+            "max_value": 1.0,
+            "log_encode": false
+        }
+    ]
+}

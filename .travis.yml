@@ -10,7 +10,7 @@ matrix:
 # command to install dependencies
 install:
   - pip install tensorflow keras
-  - pip install python-coveralls
+  - pip install codecov
   - python setup.py install
 # command to run tests
 script:
@@ -23,4 +23,4 @@ notifications:
     on_success: never
     on_failure: always
 after_success:
-  - coveralls
+  - codecov

@@ -18,7 +18,7 @@ script:
   - python -c "import keras.backend"
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
-  - py.test # or py.test for Python versions 3.5 and below
+  - py.test --cov=./# or py.test for Python versions 3.5 and below
 after_success:
   - codecov
 notifications:

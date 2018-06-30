@@ -19,7 +19,7 @@ script:
   - python -c "import keras.backend"
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
-  - py.test --cov-config .coveragerc --cov=pyshac tests/
+  - py.test --cov=pyshac tests/
 after_success:
   - codecov
 notifications:

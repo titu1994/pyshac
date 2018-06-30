@@ -18,9 +18,9 @@ script:
   - sed -i -e 's/"backend":[[:space:]]*"[^"]*/"backend":\ "'$KERAS_BACKEND'/g' ~/.keras/keras.json;
   - echo -e "Running tests with the following config:\n$(cat ~/.keras/keras.json)"
   - py.test # or py.test for Python versions 3.5 and below
+after_success:
+  - codecov
 notifications:
   email:
     on_success: never
     on_failure: always
-after_success:
-  - codecov

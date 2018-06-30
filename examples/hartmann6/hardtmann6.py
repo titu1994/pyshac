@@ -61,7 +61,7 @@ def run_shac_hartmann6():
     params = get_hartmann6_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = engine.SHAC(evaluation_hartmann6, h, total_budget=total_budget,
+    shac = engine.SHAC(h, total_budget=total_budget,
                        num_batches=num_batches, objective=objective)
 
     # do parallel work for fast processing
@@ -74,7 +74,7 @@ def run_shac_hartmann6():
     if os.path.exists('shac/'):
         shac.restore_data()
 
-    shac.fit(skip_cv_checks=True)
+    shac.fit(evaluation_hartmann6, skip_cv_checks=True)
 
     print()
     print("Evaluating after training")
@@ -86,36 +86,35 @@ def run_shac_hartmann6():
     print("Predicted mean : ", pred_mean)
 
 
-if __name__ == '__main__':
+check_hartmann6_impl()
+# print('Time for 1000 iterations = ', timeit.timeit("check_hartmann6_impl()",
+#                                                    setup="from __main__ import check_hartmann6_impl",
+#                                                    number=1000))
 
-    check_hartmann6_impl()
-    # print('Time for 1000 iterations = ', timeit.timeit("check_hartmann6_impl()",
-    #                                                    setup="from __main__ import check_hartmann6_impl",
-    #                                                    number=1000))
+""" Train """
+# start = time.time()
+# run_shac_hartmann6()
+# end = time.time()
+# print("Time in seconds : ", end - start)
 
-    """ Train """
-    # start = time.time()
-    # run_shac_hartmann6()
-    # end = time.time()
-    # print("Time in seconds : ", end - start)
+""" Evaluation """
+shac = engine.SHAC(None, total_budget=200,
+                   num_batches=5, objective='min')
 
-    """ Evaluation """
-    shac = engine.SHAC(evaluation_hartmann6, None, total_budget=200,
-                       num_batches=5, objective='min')
+shac.restore_data()
 
-    shac.restore_data()
+# Takes about 15 mins on 8 cores
+start = time.time()
+predictions = shac.predict(5, num_workers_per_batch=5, max_classfiers=17)
+end = time.time()
+print("Time in seconds : ", end - start)
 
-    start = time.time()
-    predictions = shac.predict(1, num_workers_per_batch=5, max_classfiers=17)
-    end = time.time()
-    print("Time in seconds : ", end - start)
+pred_evals = [evaluation_hartmann6(0, pred) for pred in predictions]
+pred_mean = float(np.mean(pred_evals))
+pred_std = float(np.std(pred_evals))
 
-    pred_evals = [evaluation_hartmann6(0, pred) for pred in predictions]
-    pred_mean = float(np.mean(pred_evals))
-    pred_std = float(np.std(pred_evals))
-
-    print()
-    print("Predicted results : %0.5f +- (%0.5f)" % (pred_mean, pred_std))
+print()
+print("Predicted results : %0.5f +- (%0.5f)" % (pred_mean, pred_std))
 
 """
 Results

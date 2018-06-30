@@ -159,18 +159,27 @@ def test_shac_initialization():
     h = hp.HyperParameterList(params)
 
     # direct params list submission
-    shac = engine.SHAC(evaluation_simple, params, total_budget=total_budget,
+    shac = engine.SHAC(params, total_budget=total_budget,
                        num_batches=batch_size, objective=objective)
 
     # submission of HyperParameterList
-    shac = engine.SHAC(evaluation_simple, h, total_budget=total_budget,
+    shac = engine.SHAC(h, total_budget=total_budget,
                        num_batches=batch_size, objective=objective)
 
     # default number of parallel executors
     shac.set_num_parallel_generators(None)
     shac.set_num_parallel_evaluators(None)
 
-    shac = engine.SHAC(evaluation_simple, h, total_budget=total_budget,
+    shac.concurrent_evaluators()
+    shac.parallel_evaluators()
+
+    assert shac.generator_backend == 'loky'
+    assert shac.evaluator_backend == 'loky'
+
+    shac.num_parallel_generators = 20
+    assert shac.num_parallel_generators == 20
+
+    shac = engine.SHAC(h, total_budget=total_budget,
                        num_batches=batch_size, objective=objective)
 
     with pytest.raises(ValueError):
@@ -189,7 +198,7 @@ def test_shac_simple():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = engine.SHAC(evaluation_simple, h, total_budget=total_budget,
+    shac = engine.SHAC(h, total_budget=total_budget,
                        num_batches=batch_size, objective=objective)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
@@ -199,11 +208,32 @@ def test_shac_simple():
     assert len(shac.dataset) == 0
 
     # do sequential work for debugging
-    shac.num_parallel_generators = 1
-    shac.num_parallel_evaluators = 1
+    shac.num_parallel_generators = 2
+    shac.num_parallel_evaluators = 2
 
     print("Evaluating before training")
     np.random.seed(0)
+
+    # test prediction modes
+    with pytest.raises(ValueError):
+        shac.predict(max_classfiers=10)
+
+    random_samples = shac.predict(num_samples=None, num_batches=None, num_workers_per_batch=1)  # random sample predictions
+    random_eval = [evaluation_simple(0, sample) for sample in random_samples]
+    assert len(random_eval) == 1
+
+    random_samples = shac.predict(num_samples=4, num_batches=None, num_workers_per_batch=1)  # random sample predictions
+    random_eval = [evaluation_simple(0, sample) for sample in random_samples]
+    assert len(random_eval) == 4
+
+    random_samples = shac.predict(num_samples=None, num_batches=1, num_workers_per_batch=1)  # random sample predictions
+    random_eval = [evaluation_simple(0, sample) for sample in random_samples]
+    assert len(random_eval) == 5
+
+    random_samples = shac.predict(num_samples=2, num_batches=1, num_workers_per_batch=1)  # random sample predictions
+    random_eval = [evaluation_simple(0, sample) for sample in random_samples]
+    assert len(random_eval) == 7
+
     random_samples = shac.predict(num_batches=16, num_workers_per_batch=1)  # random sample predictions
     random_eval = [evaluation_simple(0, sample) for sample in random_samples]
     random_mean = np.mean(random_eval)
@@ -211,7 +241,7 @@ def test_shac_simple():
     print()
 
     # training
-    shac.fit()
+    shac.fit(evaluation_simple)
 
     assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')
@@ -221,6 +251,8 @@ def test_shac_simple():
     print("Evaluating after training")
     np.random.seed(0)
     predictions = shac.predict(num_batches=16, num_workers_per_batch=1)
+
+    print("Shac preds", predictions)
     pred_evals = [evaluation_simple(0, pred) for pred in predictions]
     pred_mean = np.mean(pred_evals)
 
@@ -234,7 +266,7 @@ def test_shac_simple():
     shac.save_data()
 
     # Restore with different batchsize
-    shac2 = engine.SHAC(evaluation_simple, None, total_budget=total_budget,
+    shac2 = engine.SHAC(None, total_budget=total_budget,
                         num_batches=10, objective=objective)
 
     shac2.restore_data()
@@ -264,7 +296,7 @@ def test_shac_simple_relax_checks():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = engine.SHAC(evaluation_simple, h, total_budget=total_budget,
+    shac = engine.SHAC(h, total_budget=total_budget,
                        num_batches=batch_size, objective=objective)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
@@ -286,7 +318,7 @@ def test_shac_simple_relax_checks():
     print()
 
     # training
-    shac.fit(relax_checks=True)
+    shac.fit(evaluation_simple, relax_checks=True)
 
     assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')
@@ -309,7 +341,7 @@ def test_shac_simple_relax_checks():
     shac.save_data()
 
     # Restore with different batchsize
-    shac2 = engine.SHAC(evaluation_simple, None, total_budget=total_budget,
+    shac2 = engine.SHAC(None, total_budget=total_budget,
                         num_batches=10, objective=objective)
 
     shac2.restore_data()
@@ -339,7 +371,7 @@ def test_shac_simple_early_stop():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = engine.SHAC(evaluation_simple, h, total_budget=total_budget,
+    shac = engine.SHAC(h, total_budget=total_budget,
                        num_batches=batch_size, objective=objective)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
@@ -353,7 +385,7 @@ def test_shac_simple_early_stop():
     shac.num_parallel_evaluators = 1
 
     # training (with failure)
-    shac.fit(early_stop=True, skip_cv_checks=True)
+    shac.fit(evaluation_simple, early_stop=True, skip_cv_checks=True)
     assert len(shac.classifiers) == 0
 
 
@@ -366,7 +398,7 @@ def test_shac_simple_torch():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = torch_engine.TorchSHAC(evaluation_simple, h, total_budget=total_budget, max_gpu_evaluators=0,
+    shac = torch_engine.TorchSHAC(h, total_budget=total_budget, max_gpu_evaluators=0,
                                   num_batches=batch_size, objective=objective, max_cpu_evaluators=1)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
@@ -389,7 +421,7 @@ def test_shac_simple_torch():
     print()
 
     # training
-    shac.fit()
+    shac.fit(evaluation_simple)
 
     assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')
@@ -412,7 +444,7 @@ def test_shac_simple_torch():
     shac.save_data()
 
     # Restore with different batchsize
-    shac2 = torch_engine.TorchSHAC(evaluation_simple, None, total_budget=total_budget, max_gpu_evaluators=1,
+    shac2 = torch_engine.TorchSHAC(None, total_budget=total_budget, max_gpu_evaluators=1,
                                    num_batches=10, objective=objective, max_cpu_evaluators=2)
 
     assert shac2.limit_memory is True

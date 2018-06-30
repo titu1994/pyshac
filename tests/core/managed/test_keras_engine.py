@@ -310,7 +310,7 @@ def test_shac_simple():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = engine.KerasSHAC(evaluation_simple_keras_tf, h, total_budget=total_budget, max_gpu_evaluators=1,
+    shac = engine.KerasSHAC(h, total_budget=total_budget, max_gpu_evaluators=1,
                             num_batches=batch_size, objective=objective)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
@@ -333,7 +333,7 @@ def test_shac_simple():
     print()
 
     # training
-    shac.fit()
+    shac.fit(evaluation_simple_keras_tf)
 
     assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')
@@ -356,7 +356,7 @@ def test_shac_simple():
     shac.save_data()
 
     # Restore with different batchsize
-    shac2 = engine.KerasSHAC(evaluation_simple_keras_tf, None, total_budget=total_budget, max_gpu_evaluators=0,
+    shac2 = engine.KerasSHAC(None, total_budget=total_budget, max_gpu_evaluators=0,
                              num_batches=10, objective=objective)
 
     shac2.restore_data()
@@ -386,7 +386,7 @@ def test_shac_simple_early_stop():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)
 
-    shac = engine.KerasSHAC(evaluation_simple_keras_tf, h, total_budget=total_budget, max_gpu_evaluators=0,
+    shac = engine.KerasSHAC(h, total_budget=total_budget, max_gpu_evaluators=0,
                             num_batches=batch_size, objective=objective)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
@@ -400,7 +400,7 @@ def test_shac_simple_early_stop():
     shac.num_parallel_evaluators = 1
 
     # training (with failure)
-    shac.fit(early_stop=True, skip_cv_checks=True)
+    shac.fit(evaluation_simple_keras_tf, early_stop=True, skip_cv_checks=True)
     assert len(shac.classifiers) == 0
 
 

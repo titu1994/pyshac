@@ -26,10 +26,11 @@ There are three main processes that are followed when using PySHAC :
 ## Important Note for Windows Platform
 
 !!!warning
-    The `fit` and `predict` methods **must be called only from inside of a `if __name__ == '__main__'` block.**
+    The `fit` and `predict` methods **must be called only from inside of a `if __name__ == '__main__'` block.** when using the **multiprocessing** backend.
+    This is no longer an issue when using the `loky` backend (default).
 
     This is a limitation of how Windows does not support forking, and so the engine definition and its methods must be called
-    inside of a `__main__` block.
+    inside of a `__main__` block when using the `multiprocessing` backend.
 
     It is simpler to put this code inside of a function, and simply call this function from the `__main__` block
     to have better readability of code.
@@ -86,7 +87,6 @@ More information can be found in [Managed Engines](managed.md).
 
 When setting up the SHAC engine, we need to define a few important parameters which will be used by the engine :
 
-- **Evaluation Function**: This is a user defined function, that accepts 2 or more inputs as defined by the engine, and returns a python floating point value.
 - **Hyper Parameter list**: A list of parameters that have been declared. This will constitute the search space.
 - **Total budget**: The number of evaluations that will occur.
 - **Number of batches**: The number of batches per epoch of evaluation.
@@ -110,17 +110,6 @@ These parameters can be easily defined as :
 import numpy as np
 import pyshac
 
-# define the evaluation function
-def squared_error_loss(id, parameters):
-    x = parameters['x']
-    y = parameters['y']
-    y_sample = 2 * x - y
-
-    # assume best values of x and y and 2 and 0 respectively
-    y_true = 4.
-
-    return np.square(y_sample - y_true)
-
 if __name__ == '__main__':  # this is required for Windows ; not for Unix or Linux
 
     # define the parameters
@@ -138,7 +127,7 @@ if __name__ == '__main__':  # this is required for Windows ; not for Unix or Lin
     # define the objective
     objective = 'min'  # minimize the squared loss
 
-    shac = pyshac.SHAC(squared_error_loss, parameters, total_budget, num_batches, objective)
+    shac = pyshac.SHAC(parameters, total_budget, num_batches, objective)
 ```
 
 While this looks like a lot, these few lines are in essence all that is required to define the search space,
@@ -146,15 +135,40 @@ the evaluation measure and the engine.
 
 ### Training the classifiers
 
-Once the engine has been created, then it is simply a matter of calling `fit()` on the engine. This will create the
-worker threads, generate the samples, test them if they pass all of the current classifiers, prepare the dataset for
-that batch, test a cross validated classifier to see if it will train properly on the dataset, finally train a classifier
-and then begin the next epoch.
+To train a classifier, the user must define an Evaluation function. This is a user defined function,
+that accepts 2 or more inputs as defined by the engine, and returns a python floating point value.
+
+The **Evaluation Function** receives at least 2 inputs :
+
+- **Worker ID**: Integer id that can be left alone when executing only on CPU or used to determine the iteration number in the current epoch of evaluation.
+- **Parameter OrderedDict**: An OrderedDict which contains the (name, value) pairs of the Parameters passed to the engine.
+    -   Since it is an ordered dict, if only the values are required, `list(parameters.values())` can be used to get the list of values in the same order as when the Parameters were declared to the engine.
+    -   These are the values of the sampled hyper parameters which have passed through the current cascade of models.
+
+An example of a defined evaluation function :
+
+```python
+# define the evaluation function
+def squared_error_loss(id, parameters):
+    x = parameters['x']
+    y = parameters['y']
+    y_sample = 2 * x - y
+
+    # assume best values of x and y and 2 and 0 respectively
+    y_true = 4.
+
+    return np.square(y_sample - y_true)
+```
+
+Once the engine has been created, then it is simply a matter of calling `fit()` on the engine with the evaluation function
+as the parameter. This will create the worker threads, generate the samples, test them if they pass all of the current
+classifiers, prepare the dataset for that batch, test a cross validated classifier to see if it will train properly on
+the dataset, finally train a classifier and then begin the next epoch.
 
 ```python
 
 # assuming shac here is from the above code inside __main__
-shac.fit()
+shac.fit(squared_error_loss)
 ```
 
 There are a few cases to consider:
@@ -163,7 +177,7 @@ There are a few cases to consider:
 - There may be instances where we want to allow some relaxations of the constraint that the next batch must pass through all
 of the previous classifiers. This allows classifiers to train on the same search space repeatedly rather than divide the search space.
 
-In these cases, we can utilize a few arguments to allow the training behaviour to better adapt to these circumstances.
+In these cases, we can utilize additional arguments to allow the training behaviour to better adapt to these circumstances.
 These parameters are :
 
 - **skip_cv_checks**: As it suggests, if the number of samples per batch is too small, it is preferable to skip the cross validation check, as most classifiers will not pass them.
@@ -173,21 +187,28 @@ These parameters are :
 ```python
 
 # `early stopping` default is False, and it is preferred not to use it when using `relax checks`
-shac.fit(skip_cv_checks=True, early_stop=False, relax_checks=True)
+shac.fit(squared_error_loss, skip_cv_checks=True, early_stop=False, relax_checks=True)
 ```
 
 ## Sampling the best hyper parameters
 
-Once the models have been trained by the engine, it is as simple as calling `predict()` to sample multiple batches of parameters.
-As it is more efficient to sample several batches at once, `predict()` will return an a number of batches of sampled hyper paremeters.
+Once the models have been trained by the engine, it is as simple as calling `predict()` to sample multiple samples or batches of parameters.
+
+Samples can be obtained in a per instance or per batch (or even a combination) using the two parameters - `num_samples` and `num_batches`.
 
 ```python
 
-# sample a single batch of hyper parameters
-parameter_samples = shac.predict()  # samples 1 batch, of batch size 10 (10 samples in total)
+# sample a single instance of hyper parameters
+parameter_samples = shac.predict()  # samples 1 sample.
 
-# sample more than one batch of hyper parameters
-parameter_samples = shac.predict(10)  # samples 10 batches, each of batch size 10 (100 samples in total)
+# sample multiple instances of hyper parameters
+parameter_samples = shac.predict(10)  # samples 10 samples.
+
+# sample a batch of hyper parameters
+parameter_samples = shac.predict(num_batches=5)  # samples 5 batches, each containing 10 samples.
+
+# sample multiple batches and a few additional instances of hyper parameters
+parameter_samples = shac.predict(5, 5)  # samples 5 batches (each containing 10 samples) and an additional 5 samples.
 ```
 
 
@@ -197,8 +218,8 @@ When using a very large number of classifiers (default of 18), it may take an en
 hyper parameter list, let alone a batch. Therefore, it is more efficient to reduce the checks if necessary by using a few parameters.
 
 - **num_workers_per_batch**:
-    -   When using a large batch size or large number of classifiers, it is advisable to have many parallel workers sampling batches at the same time to reduce the amount of time taken to get samples that pass through all classifiers.
-    -   When using a small batch size or small number of classifiers, it is advisable to reduce the time taken to sample each batch by reducing the number of parallel workers.
+    -   When using a large number of samples or large number of classifiers, it is advisable to have many parallel workers sampling batches at the same time to reduce the amount of time taken to get samples that pass through all classifiers.
+    -   When using a small number of samples or small number of classifiers, it is advisable to reduce the time taken to sample each batch by reducing the number of parallel workers.
     -   If left as `None`, will determine the value that was used during training.
 
 - **relax_checks**: Same as for training, relaxes the checks during evaluation to sample parameters faster.
@@ -206,8 +227,8 @@ hyper parameter list, let alone a batch. Therefore, it is more efficient to redu
 
 ```python
 
-# batch size is 16, so using 16 processes to sample in parallel is more efficient than the default memory conservative count.
-parameter_samples = shac.predict(10, num_workers_per_batch=16, relax_checks=True, max_classfiers=16)
+# number of sample is 16, so using 16 processes to sample in parallel is more efficient than the default memory conservative count.
+parameter_samples = shac.predict(16, num_workers_per_batch=16, relax_checks=True, max_classfiers=16)
 ```
 
 ## Continuing Training
@@ -235,13 +256,13 @@ Example :
 
 # Reduced batch_size allows faster sampling
 # None for the hyper parameter list as it will be loaded in the restoration step.
-new_shac = pyshac.SHAC(squared_error_loss, None, total_budget, batch_size=5, objective=objective)
+new_shac = pyshac.SHAC(None, total_budget, batch_size=5, objective=objective)
 
 # restore the engine
 new_shac.restore_data()
 
 # predict or train like before
-new_shac.fit()
+new_shac.fit(squared_error_loss)
 
 or
 

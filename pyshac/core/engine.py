@@ -52,7 +52,7 @@ class _SHAC(ABC):
         ValueError: If `total budget` is not divisible by `batch size`.
 
     """
-    def __init__(self, evaluation_function, hyperparameter_list, total_budget, num_batches,
+    def __init__(self, hyperparameter_list, total_budget, num_batches,
                  objective='max', max_classifiers=18):
         if total_budget % num_batches != 0:
             raise ValueError("Number of epochs must be divisible by the batch size !")
@@ -64,7 +64,6 @@ class _SHAC(ABC):
         print("Number of workers possible : %d" % (total_budget // num_batches))
 
         self.parameters = hyperparameter_list
-        self.eval_fn = evaluation_function
         self.objective = objective
         self._total_budget = total_budget  # N
         self.num_batches = num_batches  # M
@@ -82,8 +81,11 @@ class _SHAC(ABC):
         self._per_classifier_budget = int(self.num_workers * np.floor(total_budget / (
             float(self.num_workers * (self.total_classifiers + 1)))))  # Tc
 
-        print("Using %d parallel workers, it will require %d epochs to fit %d classifiers." % (
-            self.num_workers, total_budget // self.num_workers, self._total_classifiers))
+        print("Using %d parallel workers, it will require %d epochs to fit %d classifiers.\n"
+              "Each classifier will be provided %d samples to train per epoch." % (
+                  self.num_workers, total_budget // self.num_workers,
+                  self._total_classifiers, self._per_classifier_budget,
+              ))
 
         # Compute how many threads and processes will be used
         self._compute_parallelism()
@@ -92,7 +94,7 @@ class _SHAC(ABC):
         self._prepare_dirs()
 
     @abstractmethod
-    def _evaluation_handler(self, func, worker_id, parameter_dict, *batch_args):
+    def _evaluation_handler(self, func, worker_id, parameter_dict):
         """
         Abstract method that is overriden by the subclasses. Useful to allow
         additional work to be done to manage the process that will evaluate
@@ -112,9 +114,9 @@ class _SHAC(ABC):
         # Returns:
              float.
         """
-        pass
+        raise NotImplementedError()
 
-    def fit(self, skip_cv_checks=False, early_stop=False, relax_checks=False):
+    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False):
         """
         Generated batches of samples, trains `total_classifiers` number of XGBoost models
         and evaluates each batch with the supplied function in parallel.
@@ -143,6 +145,10 @@ class _SHAC(ABC):
         ```
 
         # Arguments:
+            evaluation_function ((*) -> float): The evaluation function is passed
+                atleast the integer id (of the worker) and the sampled hyper parameters in
+                an OrderedDict.  The evaluation function is expected to pass a python
+                floating point number representing the evaluated value.
             skip_cv_checks (bool): If set, will not perform 5 fold cross validation check
                 on the models before adding them to the classifer list. Useful when the
                 batch size is small.
@@ -160,10 +166,12 @@ class _SHAC(ABC):
         else:
             num_splits = 5
 
-        print("Training with %d generator (%s backend) and %d evaluator threads (%s backend)" % (
-            self._num_parallel_generators, self._generator_backend,
-            self._num_parallel_evaluators, self._evaluator_backend,
-        ))
+        print("Training with %d generator (%s backend) and %d evaluator threads (%s backend) "
+              "with a batch size of %d" % (
+                  self._num_parallel_generators, self._generator_backend,
+                  self._num_parallel_evaluators, self._evaluator_backend,
+                  self.num_workers,
+              ))
 
         # if restarting training on older dataset, skip the older samples
         begin_run_index = len(self.dataset)
@@ -175,7 +183,8 @@ class _SHAC(ABC):
             print("Number of classifiers availale = %d (%d samples generated per accepted "
                   "sample on average)" % (len(self.classifiers), 2 ** len(self.classifiers)))
 
-            generator_backend = self.generator_backend
+            gen_backend = self.generator_backend
+            prefer = 'processes' if gen_backend in ['loky', 'multiprocessing'] else 'threads'
 
             if current_epoch >= 10 and not self._limit_memory:
                 # Use double the number of generators since a lot of samples will
@@ -185,7 +194,7 @@ class _SHAC(ABC):
                 generator_threads = self.num_parallel_generators
 
             with Parallel(generator_threads, temp_folder=self.temp_dir,
-                          backend=generator_backend, verbose=10) as parallel_generator:
+                          backend=gen_backend, verbose=10, prefer=prefer) as parallel_generator:
 
                 # parallel sample generation
                 samples = parallel_generator(delayed(self._sample_parameters)(relax_checks)
@@ -196,18 +205,13 @@ class _SHAC(ABC):
 
                 print("Finished generating %d samples" % len(samples))
 
-            # Get some arguments if possible to add to the evaluators
-            # from the various wrappers
-            var_args = self._get_evaluator_batch_arguments(current_epoch)
-
             with Parallel(self._num_parallel_evaluators, temp_folder=self.temp_dir,
-                          backend=self._evaluator_backend, verbose=10) as parallel_evaluator:
+                          backend=self._evaluator_backend, verbose=10, prefer=prefer) as parallel_evaluator:
 
                 # parallel evaluation
-                eval_values = parallel_evaluator(delayed(self._evaluation_handler)(self.eval_fn,
+                eval_values = parallel_evaluator(delayed(self._evaluation_handler)(eval_fn,
                                                                                    wid % self._num_parallel_evaluators,
-                                                                                   param,
-                                                                                   *var_args)
+                                                                                   param)
                                                  for wid, param in enumerate(params))
 
             # serial collection of results
@@ -262,18 +266,28 @@ class _SHAC(ABC):
 
         print("Finished training all models !")
 
-    def predict(self, num_batches=1, num_workers_per_batch=None, relax_checks=False,
+    def predict(self, num_samples=None, num_batches=None, num_workers_per_batch=None, relax_checks=False,
                 max_classfiers=None):
         """
         Using trained classifiers, sample the search space and predict which samples
         can successfully pass through the cascade of classifiers.
 
         When using a full cascade of 18 classifiers, a vast amount of time to sample
-        a single batch. It is recommended to save the model (done automatically during
-        training), restore a model with a smaller batch size and then use predict.
+        a single sample.
+
+        !!!note "Sample mode vs Batch mode"
+            Parameters can be generated in either sample mode or batch mode or any combination
+            of the two.
+
+            `num_samples` is on a per sample basis (1 sample generated per count). Can be `None` or an int >= 0.
+            `num_batches` is on a per batch basis (M samples generated per count). Can be `None` or an integer >= 0.
+
+            The two are combined to produce a total number of samples which are provided in a
+            list.
 
         # Arguments:
-            num_batches (int): Number of batches, each of `num_batches` to be generated
+            num_samples (None | int): Number of samples to be generated.
+            num_batches (None | int): Number of batches of samples to be generated.
             num_workers_per_batch (int): Determines how many parallel threads / processes
                 are created to generate the batches. For small batches, it is best to use 1.
                 If left as `None`, defaults to `num_parallel_generators`.
@@ -295,32 +309,46 @@ class _SHAC(ABC):
             raise ValueError("Maximum number of classifiers (%d) must be less than the number of "
                              "classifiers (%d)" % (max_classfiers, len(self.classifiers)))
 
+        if num_samples is None and num_batches is None:
+            sample_count = 1
+        elif num_samples is None and num_batches is not None:
+            sample_count = num_batches * self.num_batches
+        elif num_samples is not None and num_batches is None:
+            sample_count = num_samples
+        else:
+            sample_count = num_batches * self.num_batches + num_samples
+
         if max_classfiers is None:
             max_classfiers = len(self.classifiers)
 
         generator_threads = self._num_parallel_generators if num_workers_per_batch is None else num_workers_per_batch
+
+        num_samples = sample_count // generator_threads + int(sample_count % generator_threads != 0)
 
         if len(self.classifiers) >= 10 and not self.limit_memory:
             # Use double the number of generators since a lot of samples will
             # be rejected at these stages
             generator_threads = 2 * generator_threads if num_workers_per_batch is None else num_workers_per_batch
 
-        generator_backend = self.generator_backend
+        gen_backend = self.generator_backend
+        prefer = 'processes' if gen_backend in ['loky', 'multiprocessing'] else 'threads'
 
-        print("Evaluating %d batches (each containing %d samples) with %d generator (%s backend)" % (
-            num_batches, self.num_batches, generator_threads, self._generator_backend))
+        print("Evaluating %d batches (for a total of %d samples) with %d generator (%s backend)" % (
+            num_samples, sample_count, generator_threads, gen_backend))
 
         print("Number of classifiers availale = %d (%d samples generated per accepted "
               "sample on average)" % (max_classfiers, 2 ** max_classfiers))
 
         with Parallel(generator_threads, temp_folder=self.temp_dir, verbose=10,
-                      backend=generator_backend) as parallel_generator:
+                      backend=gen_backend, prefer=prefer) as parallel_generator:
 
             sample_list = []
-            for run_index in range(0, num_batches):
+            for run_index in range(0, sample_count, generator_threads):
+                count = min(sample_count - run_index, generator_threads)
+
                 samples = parallel_generator(delayed(self._sample_parameters)(relax_checks,
                                                                               max_classfiers)
-                                             for _ in range(self.num_batches))
+                                             for _ in range(count))
 
                 params = parallel_generator(delayed(self.dataset.prepare_parameter)(smpl)
                                             for smpl in samples)
@@ -354,10 +382,7 @@ class _SHAC(ABC):
         # Returns:
             List of encoded sample value
         """
-        # Temporarily introduce randomness and maintain the state
-        global_state = np.random.get_state()
-
-        np.random.seed(None)
+        np.random.RandomState(None)
 
         # If there are no classifiers, simply sample and pass through.
         if len(self.classifiers) == 0:
@@ -417,9 +442,6 @@ class _SHAC(ABC):
             sample = self.dataset.decode_dataset([sample])
             sample = sample[0].tolist()
 
-        # Set the state properly
-        np.random.set_state(global_state)
-
         return sample
 
     def _prepare_dirs(self):
@@ -450,23 +472,9 @@ class _SHAC(ABC):
             self._num_parallel_generators = max(self.num_workers, 1)
             self._num_parallel_evaluators = max(self.num_workers, 1)
 
-        self._generator_backend = 'multiprocessing'
-        self._evaluator_backend = 'multiprocessing'
+        self._generator_backend = 'loky'
+        self._evaluator_backend = 'loky'
         self._limit_memory = False
-
-    def _get_evaluator_batch_arguments(self, current_epoch):
-        """
-        A placeholder method used to allow a subclass to pass additional global values
-        to all of the batches that are going to the evaluators.
-
-        # Arguments:
-            current_epoch (int): The current integer id representing training epoch.
-
-        # Returns:
-            A list of pickle-able objects that can be passed to multiple threads /
-            processes
-        """
-        return []
 
     def _get_dataset_samples(self):
         """
@@ -565,12 +573,12 @@ class _SHAC(ABC):
 
     def parallel_evaluators(self):
         """
-        Sets the evaluators to use the multiprocessing backend.
+        Sets the evaluators to use the `loky` backend.
 
         The user must take the responsibility of thread safety and memory management.
         """
-        print("Evaluators will now use the `multiprocessing` backend")
-        self.evaluator_backend = 'multiprocessing'
+        print("Evaluators will now use the `loky` backend")
+        self.evaluator_backend = 'loky'
 
     def concurrent_evaluators(self):
         """
@@ -668,19 +676,20 @@ class _SHAC(ABC):
     @generator_backend.setter
     def generator_backend(self, val):
         """
-        Sets the backend of the generators. It is preferred to keep this as `multiprocessing`,
+        Sets the backend of the generators. It is preferred to keep this as `loky`,
         since the number of samples required for larger number of classifiers is enormous, and
         processes are not limited by Python's Global Interpreter Lock (an issue with the `threading`
         backend).
 
         # Arguments:
-            val (str): The backend to be assigned.
+            val (str): The backend to be assigned. Can be one of 'loky', 'multiprocessing' or
+                'threading'.
 
         # Raises:
             ValueError: If the backend passed was anything other than 'multiprocessing' or
                 'threading'
         """
-        if val not in ['threading', 'multiprocessing']:
+        if val not in ['threading', 'multiprocessing', 'loky']:
             raise ValueError("This can be one of ['multiprocessing', 'threading']")
 
         self._generator_backend = val
@@ -693,19 +702,20 @@ class _SHAC(ABC):
     @evaluator_backend.setter
     def evaluator_backend(self, val):
         """
-        Sets the backend of the evaluators. It is preferred to keep this as `multiprocessing`,
+        Sets the backend of the evaluators. It is preferred to keep this as `loky`,
         since the time taken to evaluate a large number of samples for models can be large, and
         processes are not limited by Python's Global Interpreter Lock (an issue with the `threading`
         backend).
 
         # Arguments:
-            val (str): The backend to be assigned.
+            val (str): The backend to be assigned. Can be one of 'loky', 'multiprocessing' or
+                'threading'.
 
         # Raises:
             ValueError: If the backend passed was anything other than 'multiprocessing' or
                 'threading'
         """
-        if val not in ['threading', 'multiprocessing']:
+        if val not in ['threading', 'multiprocessing', 'loky']:
             raise ValueError("This can be one of ['multiprocessing', 'threading']")
 
         self._evaluator_backend = val
@@ -759,10 +769,10 @@ class SHAC(_SHAC):
     # Raises:
         ValueError: If `total budget` is not divisible by `batch size`.
     """
-    def __init__(self, evaluation_function, hyperparameter_list, total_budget, num_batches=16,
+    def __init__(self, hyperparameter_list, total_budget, num_batches,
                  objective='max', max_classifiers=18):
 
-        super(SHAC, self).__init__(evaluation_function, hyperparameter_list, total_budget,
+        super(SHAC, self).__init__(hyperparameter_list, total_budget,
                                    num_batches=num_batches, objective=objective,
                                    max_classifiers=max_classifiers)
 
@@ -791,3 +801,49 @@ class SHAC(_SHAC):
         output = func(worker_id, parameter_dict)
         output = float(output)
         return output
+
+    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False):
+        """
+        Generated batches of samples, trains `total_classifiers` number of XGBoost models
+        and evaluates each batch with the supplied function in parallel.
+
+        Allows manually changing the number of processes that are used to generate samples
+        or to evaluate them. While the defaults generally work well, further performance
+        gains can be had by trying different values according to the limits of the system.
+
+        ```python
+        >>> eval = lambda id, params: np.exp(params['x'])
+        >>> shac = SHAC(params, total_budget=100, num_batches=10)
+
+        >>> shac.set_num_parallel_generators(20)  # change the number of generator process
+        >>> shac.set_num_parallel_evaluators(1)  # change the number of evaluator processes
+        >>> shac.generator_backend = 'multiprocessing'  # change the backend for the generator (default is `multiprocessing`)
+        >>> shac.concurrent_evaluators()  # change the backend of the evaluator to use `threading`
+        ```
+
+        Has an adaptive behaviour based on what epoch it is on, since later epochs require
+        far more number of samples to generate a single batch of samples. When the epoch
+        number increases beyond 10, it doubles the number of generator processes.
+
+        This adaptivity can be removed by setting the parameter `limit_memory` to True.
+        ```
+        >>> shac.limit_memory = True
+        ```
+
+        # Arguments:
+            evaluation_function ((int, list) -> float): The evaluation function is passed
+                only the integer id (of the worker) and the sampled hyper parameters in
+                an OrderedDict.  The evaluation function is expected to pass a python
+                floating point number representing the evaluated value.
+            skip_cv_checks (bool): If set, will not perform 5 fold cross validation check
+                on the models before adding them to the classifer list. Useful when the
+                batch size is small.
+            early_stop (bool): Stop running if fail to find a classifier that beats the
+                last stage of evaluations.
+            relax_checks (bool): If set, will allow samples who do not pass all of the
+                checks from all classifiers. Can be useful when large number of models
+                are present and remaining search space is not big enough to allow sample
+                to pass through all checks.
+        """
+        super(SHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks, early_stop=early_stop,
+                              relax_checks=relax_checks)

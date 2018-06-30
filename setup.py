@@ -31,7 +31,9 @@ setup(
     install_requires=['numpy>=1.14.2',
                       'scikit-learn>=0.19.1',
                       'pandas>=0.19.2',
-                      'joblib>=0.11',
+                      'joblib>=0.12',
+                      'loky>=2.1.4',
+                      'cloudpickle>=0.5.3',
                       'six>=1.11.0',
                       'xgboost>=0.72'],
     classifiers=(

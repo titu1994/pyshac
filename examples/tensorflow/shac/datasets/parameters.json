@@ -2,84 +2,84 @@
     "h1": [
         "DiscreteHyperParameter",
         {
-            "name": "h1",
             "values": [
                 8,
                 16,
                 32,
                 48
-            ]
+            ],
+            "name": "h1"
         }
     ],
     "h2": [
         "DiscreteHyperParameter",
         {
-            "name": "h2",
             "values": [
                 8,
                 16,
                 32,
                 48
-            ]
+            ],
+            "name": "h2"
         }
     ],
     "init1": [
         "DiscreteHyperParameter",
         {
-            "name": "init1",
             "values": [
                 "glorot_uniform",
                 "he_uniform"
-            ]
+            ],
+            "name": "init1"
         }
     ],
     "init2": [
         "DiscreteHyperParameter",
         {
-            "name": "init2",
             "values": [
                 "glorot_uniform",
                 "he_uniform"
-            ]
+            ],
+            "name": "init2"
         }
     ],
     "dropout1": [
         "UniformContinuousHyperParameter",
         {
-            "min_value": 0.1,
-            "name": "dropout1",
             "max_value": 0.8,
-            "log_encode": false
+            "log_encode": false,
+            "min_value": 0.1,
+            "name": "dropout1"
         }
     ],
     "dropout2": [
         "UniformContinuousHyperParameter",
         {
-            "min_value": 0.1,
-            "name": "dropout2",
             "max_value": 0.5,
-            "log_encode": false
+            "log_encode": false,
+            "min_value": 0.1,
+            "name": "dropout2"
         }
     ],
     "optimizer": [
         "DiscreteHyperParameter",
         {
-            "name": "optimizer",
             "values": [
                 "adam",
                 "sgd"
-            ]
+            ],
+            "name": "optimizer"
         }
     ],
     "learning_rate": [
         "DiscreteHyperParameter",
         {
-            "name": "learning_rate",
             "values": [
                 0.01,
                 0.005,
                 0.001
-            ]
+            ],
+            "name": "learning_rate"
         }
     ]
 }

@@ -2,7 +2,7 @@
 ----
 
 For all engines, to be efficient and reduce execution time, sample generation, and training of models is done using
-Joblib and multiprocessing. However, the evaluation function cannot be managed by the training module, since it is a function written by the user.
+Joblib and Loky. However, the evaluation function cannot be managed by the training module, since it is a function written by the user.
 
 As such, to offer maximum flexibility, we offer two alternatives :
 
@@ -15,7 +15,7 @@ Due to the need for forcing serial execution of the evaluation functions, there 
 engines :
 
 - `num_parallel_evaluators` : Set this to `1` for serial execution of the evaluation function
-- `evaluator_backend` : This is generally set to `multiprocessing`, but should be set to `threading` for serial execution.
+- `evaluator_backend` : This is generally set to `loky`, but should be set to `threading` for serial execution.
 
 ```python
 
@@ -31,7 +31,7 @@ Similarly, if for some reason you wish to force serial execution of the generato
 engines :
 
 - `num_parallel_generators` : Set this to `1` for serial execution of the evaluation function
-- `generator_backend` : This is generally set to `multiprocessing`, but should be set to `threading` for serial execution.
+- `generator_backend` : This is generally set to `loky`, but should be set to `threading` for serial execution.
 
 ```python
 
@@ -45,7 +45,7 @@ shac.parallel_evaluators()
 
 !!!info "Helper functions for backends"
     All engines support two methods : `parallel_evaluators()` and `concurrent_evaluators()`.
-    Using this will set the engine to use the `multiprocessing` and `threading` backend respectively.
+    Using this will set the engine to use the `loky` and `threading` backend respectively.
 
     Due to Python's Global Interpreter Lock, it is possible to use the `threading` backend to
     reduce the number of parallel executions. However, these models are still executed concurrently,

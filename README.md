@@ -67,25 +67,51 @@ noise = pyshac.NormalContinuousHyperParameter('noise', mean=0.0, std=1.0)
 
 When setting up the SHAC engine, we need to define a few important parameters which will be used by the engine :
 
-- **Evaluation Function**: This is a user defined function, that accepts 2 or more inputs as defined by the engine, and returns a python floating point value.
 - **Hyper Parameter list**: A list of parameters that have been declared. This will constitute the search space.
 - **Total budget**: The number of evaluations that will occur.
 - **Number of batches**: The number of samples per batch of evaluation.
 - **Objective**: String value which can be either `max` or `min`. Defines whether the objective should be maximised or minimised.
 - **Maximum number of classifiers**: As it suggests, decides the upper limit of how many classifiers can be trained. This is optional, and usually not required to specify.
 
-The **Evaluation Function** receives 2 inputs :
+```python
+
+import numpy as np
+import pyshac
+
+# define the parameters
+param_x = pyshac.UniformContinuousHyperParameter('x', -5.0, 5.0)
+param_y = pyshac.UniformContinuousHyperParameter('y', -2.0, 2.0)
+
+parameters = [param_x, param_y]
+
+# define the total budget as 100 evaluations
+total_budget = 100  # 100 evaluations at maximum
+
+# define the number of batches
+num_batches = 10  # 10 samples per batch
+
+# define the objective
+objective = 'min'  # minimize the squared loss
+
+shac = pyshac.SHAC(parameters, total_budget, num_batches, objective)
+```
+
+
+### Training the classifiers
+
+To train a classifier, the user must define an Evaluation function. This is a user defined function,
+that accepts 2 or more inputs as defined by the engine, and returns a python floating point value.
+
+The **Evaluation Function** receives at least 2 inputs :
 
 - **Worker ID**: Integer id that can be left alone when executing only on CPU or used to determine the iteration number in the current epoch of evaluation.
 - **Parameter OrderedDict**: An OrderedDict which contains the (name, value) pairs of the Parameters passed to the engine.
     -   Since it is an ordered dict, if only the values are required, `list(parameters.values())` can be used to get the list of values in the same order as when the Parameters were declared to the engine.
     -   These are the values of the sampled hyper parameters which have passed through the current cascade of models.
 
+An example of a defined evaluation function :
+
 ```python
-
-import numpy as np
-import pyshac
-
 # define the evaluation function
 def squared_error_loss(id, parameters):
     x = parameters['x']
@@ -96,29 +122,7 @@ def squared_error_loss(id, parameters):
     y_true = 4.
 
     return np.square(y_sample - y_true)
-
-if __name__ == '__main__':  # this is required for Windows ; not for Unix or Linux
-
-    # define the parameters
-    param_x = pyshac.UniformContinuousHyperParameter('x', -5.0, 5.0)
-    param_y = pyshac.UniformContinuousHyperParameter('y', -2.0, 2.0)
-
-    parameters = [param_x, param_y]
-
-    # define the total budget as 100 evaluations
-    total_budget = 100  # 100 evaluations at maximum
-
-    # define the number of batches
-    num_batches = 10  # 10 samples per batch
-
-    # define the objective
-    objective = 'min'  # minimize the squared loss
-
-    shac = pyshac.SHAC(squared_error_loss, parameters, total_budget, num_batches, objective)
 ```
-
-
-### Training the classifiers
 
 A single call to `shac.fit()` will begin training the classifiers.
 
@@ -128,7 +132,7 @@ There are a few cases to consider:
 - There may be instances where we want to allow some relaxations of the constraint that the next batch must pass through all
 of the previous classifiers. This allows classifiers to train on the same search space repeatedly rather than divide the search space.
 
-In these cases, we can utilize a few arguments to allow the training behaviour to better adapt to these circumstances.
+In these cases, we can utilize a few additional parameters to allow the training behaviour to better adapt to these circumstances.
 These parameters are :
 
 - **skip_cv_checks**: As it suggests, if the number of samples per batch is too small, it is preferable to skip the cross validation check, as most classifiers will not pass them.
@@ -138,21 +142,28 @@ These parameters are :
 ```python
 
 # `early stopping` default is False, and it is preferred not to use it when using `relax checks`
-shac.fit(skip_cv_checks=True, early_stop=False, relax_checks=True)
+shac.fit(squared_error_loss, skip_cv_checks=True, early_stop=False, relax_checks=True)
 ```
 
-### Sampling the best hyper parameters
+## Sampling the best hyper parameters
 
-Once the models have been trained by the engine, it is as simple as calling `predict()` to sample multiple batches of parameters.
-As it is more efficient to sample several batches at once, `predict()` will return an a number of batches of sampled hyper paremeters.
+Once the models have been trained by the engine, it is as simple as calling `predict()` to sample multiple samples or batches of parameters.
+
+Samples can be obtained in a per instance or per batch (or even a combination) using the two parameters - `num_samples` and `num_batches`.
 
 ```python
 
-# sample a single batch of hyper parameters
-parameter_samples = shac.predict()  # samples 1 batch, of batch size 10 (10 samples in total)
+# sample a single instance of hyper parameters
+parameter_samples = shac.predict()  # samples 1 sample.
 
-# sample more than one batch of hyper parameters
-parameter_samples = shac.predict(10)  # samples 10 batches, each of batch size 10 (100 samples in total)
+# sample multiple instances of hyper parameters
+parameter_samples = shac.predict(10)  # samples 10 samples.
+
+# sample a batch of hyper parameters
+parameter_samples = shac.predict(num_batches=5)  # samples 5 batches, each containing 10 samples.
+
+# sample multiple batches and a few additional instances of hyper parameters
+parameter_samples = shac.predict(5, 5)  # samples 5 batches (each containing 10 samples) and an additional 5 samples.
 ```
 
 ## Examples

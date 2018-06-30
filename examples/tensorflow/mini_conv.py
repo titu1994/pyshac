@@ -113,7 +113,8 @@ def evaluate_model(session, worker_id, parameters):
     return accuracy
 
 
-if __name__ == '__main__':
+if __name__ == '__main__':  # This isn't needed anymore for Windows for the Loky backend
+
     # get the parameter configuration
     param_list = get_parameters()
 
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     # number of gpus to use
     max_gpus = 1
 
-    shac = TensorflowSHAC(evaluate_model, param_list, total_budget, num_batches=num_batches, objective='max',
+    shac = TensorflowSHAC(param_list, total_budget, num_batches=num_batches, objective='max',
                           max_gpu_evaluators=max_gpus, max_cpu_evaluators=num_batches)
 
     # If old training session exists, restore it.
@@ -132,14 +133,14 @@ if __name__ == '__main__':
         shac.restore_data()
 
     # too few samples per epoch to perform proper CV checks
-    shac.fit(skip_cv_checks=True)
+    shac.fit(evaluate_model, skip_cv_checks=True)
 
     # unnecessary since the dataset is saved during training
     # but good practice
     shac.save_data()
 
     # Use a different generator to predict 5 samples per batch instead of 10
-    shac = TensorflowSHAC(evaluate_model, None, total_budget, num_batches=5, max_gpu_evaluators=0,
+    shac = TensorflowSHAC(None, total_budget, num_batches=5, max_gpu_evaluators=0,
                           objective='max', max_cpu_evaluators=5)
 
     # load the data from training

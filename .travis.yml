@@ -10,9 +10,9 @@ matrix:
 # command to install dependencies
 install:
   - pip install tensorflow keras
-  - pip install coverage
-  - pip install pytest-cov
-  - pip install codecov
+  - pip install --upgrade coverage
+  - pip install --upgrade pytest-cov
+  - pip install --upgrade codecov
   - python setup.py install
 # command to run tests
 script:

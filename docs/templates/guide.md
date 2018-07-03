@@ -199,16 +199,16 @@ Samples can be obtained in a per instance or per batch (or even a combination) u
 ```python
 
 # sample a single instance of hyper parameters
-parameter_samples = shac.predict()  # samples 1 sample.
+parameter_samples = shac.predict()  # Gets 1 sample.
 
 # sample multiple instances of hyper parameters
-parameter_samples = shac.predict(10)  # samples 10 samples.
+parameter_samples = shac.predict(10)  # Gets 10 samples.
 
 # sample a batch of hyper parameters
-parameter_samples = shac.predict(num_batches=5)  # samples 5 batches, each containing 10 samples.
+parameter_samples = shac.predict(num_batches=5)  # Samples 5 batches, each containing 10 samples.
 
 # sample multiple batches and a few additional instances of hyper parameters
-parameter_samples = shac.predict(5, 5)  # samples 5 batches (each containing 10 samples) and an additional 5 samples.
+parameter_samples = shac.predict(5, 5)  # Samples 5 batches (each containing 10 samples) and an additional 5 samples.
 ```
 
 

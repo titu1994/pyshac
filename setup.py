@@ -32,10 +32,10 @@ setup(
                       'scikit-learn>=0.19.1',
                       'pandas>=0.19.2',
                       'joblib>=0.12',
-                      'loky>=2.1.4',
+                      'loky>=2.2.0',
                       'cloudpickle>=0.5.3',
                       'six>=1.11.0',
-                      'xgboost>=0.72'],
+                      'xgboost>=0.80'],
     classifiers=(
         "Programming Language :: Python :: 2",
         "Programming Language :: Python :: 2.7",

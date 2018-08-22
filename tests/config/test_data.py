@@ -123,6 +123,35 @@ def test_set_dataset():
 
 
 @cleanup_dirs
+@deterministic_test
+def test_dataset_get_best_parameters():
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    dataset = data.Dataset(h)
+
+    with pytest.raises(ValueError):
+        dataset.get_best_parameters(None)
+
+    # Test with empty dataset
+    assert dataset.get_best_parameters() is None
+
+    samples = [(h.sample(), np.random.uniform()) for _ in range(5)]
+    for sample in samples:
+        dataset.add_sample(*sample)
+
+    objective_values = [v for h, v in samples]
+    min_index = np.argmin(objective_values)
+    max_index = np.argmax(objective_values)
+
+    max_hp = dataset.get_best_parameters(objective='max')
+    min_hp = dataset.get_best_parameters(objective='min')
+
+    assert max_hp == samples[max_index][0]
+    assert min_hp == samples[min_index][0]
+
+
+@cleanup_dirs
 def test_dataset_parameters():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)

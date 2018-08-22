@@ -300,6 +300,34 @@ class Dataset(object):
 
         self._parameters = parameters
 
+    def get_best_parameters(self, objective='max'):
+        """
+        Selects the best hyper parameters according to the maximization
+        or minimization of the objective value.
+
+        Returns `None` if there are no samples in the dataset.
+
+        # Arguments:
+            objective: String label indicating whether to maximize or minimize
+                the objective value.
+
+        # Raises:
+            ValueError: If the objective is not `max` or `min`.
+
+        # Returns:
+            A list of hyperparameter settings or `None` if the dataset is empty.
+        """
+        if objective not in ['max', 'min']:
+            raise ValueError("Objective must be one of 'max' or 'min'")
+
+        if self.size == 0:
+            return None
+
+        if objective == 'max':
+            return self.X[int(np.argmax(self.Y))]
+        else:
+            return self.X[int(np.argmin(self.Y))]
+
     def _prepare_dir(self):
         """
         Creates the directories needed to save the data and parameters.

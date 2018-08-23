@@ -1,4 +1,4 @@
-python setup.py install
+pip install -e .
 cd docs
 python autogen.py
 cd ..

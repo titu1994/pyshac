@@ -144,8 +144,8 @@ def test_dataset_get_best_parameters():
     min_index = np.argmin(objective_values)
     max_index = np.argmax(objective_values)
 
-    max_hp = dataset.get_best_parameters(objective='max')
-    min_hp = dataset.get_best_parameters(objective='min')
+    max_hp = list(dataset.get_best_parameters(objective='max').values())
+    min_hp = list(dataset.get_best_parameters(objective='min').values())
 
     assert max_hp == samples[max_index][0]
     assert min_hp == samples[min_index][0]

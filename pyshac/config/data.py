@@ -324,9 +324,9 @@ class Dataset(object):
             return None
 
         if objective == 'max':
-            return self.X[int(np.argmax(self.Y))]
+            return self.prepare_parameter(self.X[int(np.argmax(self.Y))])
         else:
-            return self.X[int(np.argmin(self.Y))]
+            return self.prepare_parameter(self.X[int(np.argmin(self.Y))])
 
     def _prepare_dir(self):
         """

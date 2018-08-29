@@ -15,9 +15,6 @@ repo_url: https://github.com/titu1994/pyshac
 site_description: 'Documentation for PySHAC, the Python library for Sequential Halving and Classification.'
 
 dev_addr: '0.0.0.0:8000'
-google_analytics:
-  - 'UA-47921241-1'
-  - 'auto'
 
 markdown_extensions:
   - admonition

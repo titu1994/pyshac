@@ -4,7 +4,7 @@ import os
 
 
 long_description = (
-    'Python library which implements Succesive Halving and Classification '
+    'Python library which implements Successive Halving and Classification '
     'for Parallel Architecture and Hyper Parameter Search from the paper '
     '[Parallel Architecture and Hyperparameter Search via Successive Halving '
     'and Classification](https://arxiv.org/abs/1805.10255).'
@@ -26,7 +26,7 @@ setup(
     license='MIT',
     author='Somshubra Majumdar',
     author_email='titu1994@gmail.com',
-    description='Python library which implements Succesive Halving and Classification algorithm',
+    description='Python library which implements Successive Halving and Classification algorithm',
     long_description=long_description,
     install_requires=['numpy>=1.14.2',
                       'scikit-learn>=0.19.1',

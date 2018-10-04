@@ -133,7 +133,7 @@ if __name__ == '__main__':  # This isn't needed anymore for Windows for the Loky
         shac.restore_data()
 
     # too few samples per epoch to perform proper CV checks
-    shac.fit(evaluate_model, skip_cv_checks=True)
+    # shac.fit(evaluate_model, skip_cv_checks=True)
 
     # unnecessary since the dataset is saved during training
     # but good practice
@@ -146,7 +146,7 @@ if __name__ == '__main__':  # This isn't needed anymore for Windows for the Loky
     # load the data from training
     shac.restore_data()
 
-    samples = shac.predict()
+    samples = shac.predict(5)
 
     # generated a batch of 5 classifiers which can now be evaluated
     for i, sample in enumerate(samples):

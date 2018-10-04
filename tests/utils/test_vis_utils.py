@@ -65,6 +65,12 @@ def test_plot_dataset():
 
     os.remove('dataset.png')
 
+    # Plot to directory with saving
+    vis_utils.plot_dataset(dataset, to_file='temp/dataset.png')
+    assert os.path.exists('temp/dataset.png')
+
+    shutil.rmtree('temp')
+
     # None path
     with pytest.raises(FileNotFoundError):
         vis_utils.plot_dataset(None)

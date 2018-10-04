@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import pyshac.config.data as data
 plt.style.use('seaborn-paper')
@@ -14,15 +15,12 @@ def plot_dataset(dataset, to_file='dataset.png',
         dataset (Dataset | str): A Dataset which has been
             restored or a string path to the root of the
             shac directory where the dataset is stored.
-
         to_file (str | None): A string file name if the
             dataset plot is to be stored in a file, or
             `None` if the image should not be saved to
             a file.
-
         title (str): String label used as the title of
             the plot.
-
         eval_label (str): String label used as the y axis
             label of the plot.
 
@@ -68,4 +66,10 @@ def plot_dataset(dataset, to_file='dataset.png',
     plt.show()
 
     if type(to_file) == str:
-        fig.savefig(to_file)
+        head, tail = os.path.split(to_file)
+
+        if len(head) == 0:
+            fig.savefig(to_file)
+        else:
+            os.makedirs(head, exist_ok=True)
+            fig.savefig(to_file)

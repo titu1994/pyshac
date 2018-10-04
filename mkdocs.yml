@@ -45,3 +45,5 @@ pages:
   - PyTorch SHAC: core/torch_engine.md
   - Tensorflow SHAC: core/tf_engine.md
   - Keras SHAC: core/keras_engine.md
+- Utils:
+    - Visualization: utils/vis_utils.md

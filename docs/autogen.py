@@ -14,6 +14,7 @@ import pyshac.core.engine as optimizer
 import pyshac.core.managed.tf_engine as tf_optimizer
 import pyshac.core.managed.keras_engine as keras_optimizer
 import pyshac.core.managed.torch_engine as torch_optimizer
+import pyshac.utils.vis_utils as vis_utils
 
 import sys
 if sys.version[0] == '2':
@@ -122,6 +123,12 @@ PAGES = [
                 torch_optimizer.TorchSHAC.parallel_evaluators,
                 torch_optimizer.TorchSHAC.concurrent_evaluators,
             ]),
+        ],
+    },
+    {
+        'page': 'utils/vis_utils.md',
+        'functions': [
+            vis_utils.plot_dataset,
         ],
     },
     # {

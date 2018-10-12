@@ -2,13 +2,9 @@ from setuptools import setup, find_packages
 import re
 import os
 
-
-long_description = (
-    'Python library which implements Successive Halving and Classification '
-    'for Parallel Architecture and Hyper Parameter Search from the paper '
-    '[Parallel Architecture and Hyperparameter Search via Successive Halving '
-    'and Classification](https://arxiv.org/abs/1805.10255).'
-)
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 
 def get_version(package):
@@ -28,6 +24,7 @@ setup(
     author_email='titu1994@gmail.com',
     description='Python library which implements Successive Halving and Classification algorithm',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     install_requires=['numpy>=1.15.2',
                       'scikit-learn>=0.19.1',
                       'pandas>=0.23.4',

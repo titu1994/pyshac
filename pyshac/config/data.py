@@ -1,4 +1,4 @@
-import io
+import codecs
 import json
 import os
 from collections import OrderedDict
@@ -163,7 +163,7 @@ class Dataset(object):
         # serialize the parameters
         param_config = self._parameters.get_config()
 
-        with io.open(self.parameter_path, 'w', encoding='utf-8') as f:
+        with codecs.open(self.parameter_path, 'w', encoding='utf-8') as f:
             json.dump(param_config, f, indent=4)
 
         print("Serialization of dataset done !")
@@ -188,7 +188,7 @@ class Dataset(object):
 
         self.set_dataset(x.tolist(), y.tolist())
 
-        with io.open(self.parameter_path, 'r', encoding='utf-8') as f:
+        with codecs.open(self.parameter_path, 'r', encoding='utf-8') as f:
             param_config = json.load(f, object_pairs_hook=OrderedDict)
             self._parameters = hp.HyperParameterList.load_from_config(param_config)
 
@@ -371,7 +371,7 @@ class Dataset(object):
         X = x.tolist()
         Y = y.tolist()
 
-        with io.open(parameter_path, 'r', encoding='utf-8') as f:
+        with codecs.open(parameter_path, 'r', encoding='utf-8') as f:
             param_config = json.load(f, object_pairs_hook=OrderedDict)
             parameters = hp.HyperParameterList.load_from_config(param_config)
 

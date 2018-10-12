@@ -12,6 +12,12 @@ from pyshac.core.managed import torch_engine
 
 warnings.simplefilter('ignore', DeprecationWarning)
 
+# compatible with both Python 2 and 3
+try:
+    FileNotFoundError
+except NameError:
+    FileNotFoundError = IOError
+
 
 # wrapper function to clean up saved files and be deterministic
 def optimizer_wrapper(func):

@@ -306,10 +306,16 @@ class _SHAC(ABC):
         # Raises:
             ValueError: If the number of hyper parameters in the file
                 are not the same as the number of hyper parameters
-                that are available to the engine.
+                that are available to the engine or if the number of
+                samples in the provided dataset are less than the
+                required number of samples by the engine.
             FileNotFoundError: If the dataset is not available at the
                 provided filepath.
         """
+        if self.parameters is None:
+            raise ValueError("Parameter list cannot be `None` when training "
+                             "via an external dataset.")
+
         num_epochs = self.total_budget // self.num_workers
 
         if skip_cv_checks:
@@ -602,7 +608,9 @@ class _SHAC(ABC):
         # Raises:
             ValueError: If the number of hyper parameters in the file
                 are not the same as the number of hyper parameters
-                that are available to the engine.
+                that are available to the engine or if the number of
+                samples in the provided dataset are less than the
+                required number of samples by the engine.
             FileNotFoundError: If the dataset is not available at the
                 provided filepath.
 
@@ -616,6 +624,12 @@ class _SHAC(ABC):
 
         print("Deserializing dataset...")
         df = pd.read_csv(dataset_path, header=0, encoding='utf-8')
+
+        if len(df) < self._total_budget:
+            raise ValueError("Number of available samples from provided dataset (%d) "
+                             "is less than the required number of samples (%d)" % (
+                                len(df), self._total_budget,
+                             ))
 
         cols = df.columns.values.tolist()
         df.drop(cols[0], axis=1, inplace=True)

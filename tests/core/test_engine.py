@@ -500,6 +500,29 @@ def test_shac_fit_dataset():
     # create the mock dataset
     create_mock_dataset()
 
+    # Test wrong path
+    with pytest.raises(FileNotFoundError):
+        shac.fit_dataset('random.csv')
+
+    # Test wrong engine configurations
+    shac3 = engine.SHAC(h, 50000, num_batches=5)
+
+    # Number of samples required is more than provided samples
+    with pytest.raises(ValueError):
+        shac3.fit_dataset('shac/mock.csv')
+
+    # Test `None` parameters for engine
+    shac5 = engine.SHAC(None, total_budget, batch_size)
+
+    with pytest.raises(ValueError):
+        shac5.fit_dataset('shac/mock.csv')
+
+    # Wrong number of set params
+    shac4 = engine.SHAC([params[0]], total_budget, batch_size)
+
+    with pytest.raises(ValueError):
+        shac4.fit_dataset('shac/mock.csv')
+
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
     assert shac._per_classifier_budget == 200
     assert shac.num_workers == 200

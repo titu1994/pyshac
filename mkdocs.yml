@@ -37,6 +37,7 @@ pages:
 - Serial Evaluation: serial-execution.md
 - Managed Engines: managed.md
 - Custom Hyper Parameters: custom-hyper-parameters.md
+- External Dataset Training: external-dataset-training.md
 - Config:
   - Hyper Parameters: config/hyperparameters.md
   - Datasets: config/data.md

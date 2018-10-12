@@ -38,7 +38,7 @@ setup(
                       'xgboost>=0.80',
                       'matplotlib>=3.0.0; python_version > "3.0"'],
     extras_require={
-        'tests': ['coverage', 'pytest-cov', 'codecov', 'matplotlib>=2.2.3'],
+        'tests': ['coverage', 'pytest-cov', 'codecov', 'matplotlib==2.2.1'],
     },
     classifiers=(
         "Programming Language :: Python :: 2",

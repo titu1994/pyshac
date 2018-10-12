@@ -1,19 +1,18 @@
+import multiprocessing
 import os
 import warnings
-import multiprocessing
 from abc import ABCMeta, abstractmethod
-from joblib import Parallel, delayed
 
 import numpy as np
-import xgboost as xgb
-
-import pyshac.config.hyperparameters as hp
+import pandas as pd
 import pyshac.config.data as data
+import pyshac.config.hyperparameters as hp
 import pyshac.utils.xgb_utils as xgb_utils
+import xgboost as xgb
+from joblib import Parallel, delayed
 
 warnings.simplefilter('ignore', DeprecationWarning)
 warnings.simplefilter('ignore', FutureWarning)
-
 
 # compatible with Python 2 and 3:
 ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
@@ -52,6 +51,7 @@ class _SHAC(ABC):
         ValueError: If `total budget` is not divisible by `batch size`.
 
     """
+
     def __init__(self, hyperparameter_list, total_budget, num_batches,
                  objective='max', max_classifiers=18):
         if total_budget % num_batches != 0:
@@ -266,6 +266,130 @@ class _SHAC(ABC):
 
         print("Finished training all models !")
 
+    def fit_dataset(self, dataset_path, skip_cv_checks=False, early_stop=False, presort=False):
+        """
+        Uses the provided dataset file to train the engine, instead of using
+        the sequentual halving and classification algorithm directly. The data
+        provided in the path must strictly follow the format of the dataset
+        maintained by the engine.
+
+        # Standard format of datasets:
+            Each dataset csv file must contain an integer id column named "id"
+            as its 1st column, followed by several columns describing the values
+            taken by the hyper parameters, and the final column must be for
+            the the objective criterion, and *must* be named "scores".
+
+            The csv file *must* contain a header, following the above format.
+
+        # Example:
+                id,hp1,hp2,scores
+                0,1,h1,1.0
+                1,1,h2,0.2
+                2,0,h1,0.0
+                3,0,h3,0.5
+                ...
+
+        # Arguments:
+            dataset_path (str): The full or relative path to a csv file
+                containing the values of the dataset.
+            skip_cv_checks (bool): If set, will not perform 5 fold cross validation check
+                on the models before adding them to the classifer list. Useful when the
+                batch size is small.
+            early_stop (bool): Stop running if fail to find a classifier that beats the
+                last stage of evaluations.
+            presort (bool): Boolean flag to determine whether to sort
+                the values of the dataset prior to loading. Ascending or
+                descending sort is selected based on whether the engine
+                is maximizing or minimizing the objective.
+
+        # Raises:
+            ValueError: If the number of hyper parameters in the file
+                are not the same as the number of hyper parameters
+                that are available to the engine.
+            FileNotFoundError: If the dataset is not available at the
+                provided filepath.
+        """
+        num_epochs = self.total_budget // self.num_workers
+
+        if skip_cv_checks:
+            num_splits = 1
+        else:
+            num_splits = 5
+
+        # Reset the original dataset
+        self._dataset_index = 0
+        self.dataset.clear()
+
+        # Load the dataset into memory
+        self._rebuild_dataset(dataset_path, presort)
+
+        X, Y = self.dataset.get_dataset()
+
+        begin_run_index = 0
+
+        for run_index in range(begin_run_index, self.total_budget, self.num_workers):
+
+            current_epoch = (run_index // self.num_workers) + 1
+            print("Beginning epoch %0.4d out of %0.4d" % (current_epoch, num_epochs))
+            print("Number of classifiers availale = %d (%d samples generated per accepted "
+                  "sample on average)" % (len(self.classifiers), 2 ** len(self.classifiers)))
+
+            # Extract the samples from the dataset
+            params = X[run_index: run_index + self.num_workers]
+
+            print("Finished generating %d samples" % len(params))
+
+            # Extract the evaluation results from the dataset
+            eval_values = Y[run_index: run_index + self.num_workers]
+
+            # serial collection of results
+            eval_values = list(eval_values)
+            print("Finished evaluating %d samples" % len(eval_values))
+
+            # get the dataset as numpy arrays
+            x = np.array(params, dtype=np.object)
+            y = np.array(eval_values, dtype=np.object)
+
+            if len(y) >= self._per_classifier_budget:
+                # encode the dataset to prepare for training
+                x, y = self._prepare_train_dataset(x, y)
+
+                # train a classifier on the encoded dataset
+                model = self._train_classifier(x, y, num_splits=num_splits)
+                print("Finished training the %d-th classifier" % (len(self.classifiers) + 1))
+
+                # check if model failed to train for some reason
+                if model is not None:
+                    self.classifiers.append(model)
+
+                else:
+                    # the model can be None because of 2 reasons
+                    # if maximum number of classifiers reached, then tell the user the reason.
+                    if len(self.classifiers) == self.total_classifiers:
+                        print("Cannot train any more models as maximum number of models has been reached.")
+
+                    else:
+                        # tell the user that the model failed the training procedure
+                        print("\nCould not find a good classifier, therefore continuing to next epochs without "
+                              "adding a model.\n ")
+
+                        # if early stop flag was set, stop training.
+                        if early_stop:
+                            print("Since `early_stop` is set, stopping exeution and serializing immediately.")
+                            break
+
+                # Update the internal dataaset index
+                self._dataset_index += self._per_classifier_budget
+
+            print("\n\nFinished training %4d out of %4d epochs" % (current_epoch, num_epochs))
+            print()
+
+            print("Serializing data and models")
+            self.save_data()
+            print()
+
+        print("Finished training all models !")
+
     def predict(self, num_samples=None, num_batches=None, num_workers_per_batch=None, relax_checks=False,
                 max_classfiers=None):
         """
@@ -426,7 +550,7 @@ class _SHAC(ABC):
                         checks_relaxation_counter += 1
 
                         warnings.warn("Relaxing check to pass %d classifiers only" % (
-                                      clf_count - checks_relaxation_counter))
+                                clf_count - checks_relaxation_counter))
 
                     else:
                         # Otherwise, simply notify user that we could not find a sample
@@ -443,6 +567,84 @@ class _SHAC(ABC):
             sample = sample[0].tolist()
 
         return sample
+
+    def _rebuild_dataset(self, dataset_path, presort):
+        """
+        Uses the provided path to load the values contained in the dataset
+        in a standard format as shown below, and then reloads these values
+        into the internal dataset of the engine.
+
+        Standard format of datasets:
+        Each dataset csv file must contain an integer id column named "id"
+        as its 1st column, followed by several columns describing the values
+        taken by the hyper parameters, and the final column must be for
+        the the objective criterion, and *must* be named "scores".
+
+        The csv file *must* contain a header, following the above format.
+
+        Example:
+            id,hp1,hp2,scores
+            0,1,1,1.0
+            1.0,1,0.0
+            2,1,0,0.0
+            3,0,0,1.0
+            ...
+
+        # Arguments:
+            dataset_path (str): The full or relative path to a csv file
+                containing the values of the dataset.
+            presort (bool): Boolean flag to determine whether to sort
+                the values of the dataset prior to loading. Ascending or
+                descending sort is selected based on whether the engine
+                is maximizing or minimizing the objective.
+
+        # Raises:
+            ValueError: If the number of hyper parameters in the file
+                are not the same as the number of hyper parameters
+                that are available to the engine.
+            FileNotFoundError: If the dataset is not available at the
+                provided filepath.
+
+        # Returns:
+            A re-constructed dataset that has been restored with provided values.
+        """
+        if not os.path.exists(dataset_path):
+            raise FileNotFoundError("The dataset at provided path %s was not "
+                                    "found. Please provide the correct "
+                                    "path." % dataset_path)
+
+        print("Deserializing dataset...")
+        df = pd.read_csv(dataset_path, header=0, encoding='utf-8')
+
+        cols = df.columns.values.tolist()
+        df.drop(cols[0], axis=1, inplace=True)
+
+        hyperparam_cols = cols[1:-1]
+        if len(hyperparam_cols) != len(self.parameters):
+            raise ValueError("Number of hyper parameters in provided dataset (%d)"
+                             "does not match the number of hyper parameters "
+                             "available for the engine (%d)." % (
+                                 len(hyperparam_cols), len(self.parameters)
+                             ))
+
+        if presort:
+            if self.objective == 'max':
+                sort_ascending = True
+            else:
+                sort_ascending = False
+
+            df.sort_values('scores', ascending=sort_ascending, inplace=True)
+
+        x = df[cols[1:-1]].values
+        y = df[cols[-1]].values
+
+        # Load the values into the dataset
+        self.dataset.set_dataset(x.tolist(), y.tolist())
+
+        # Save the dataset alongside the parameters
+        self.dataset.save_dataset()
+
+        return self.dataset
 
     def _prepare_dirs(self):
         """
@@ -720,11 +922,11 @@ class _SHAC(ABC):
 
         self._evaluator_backend = val
         print("Evaluator backend set to %s" % val)
-        
+
     @property
     def limit_memory(self):
         return self._limit_memory
-    
+
     @limit_memory.setter
     def limit_memory(self, limit):
         self._limit_memory = limit
@@ -769,9 +971,9 @@ class SHAC(_SHAC):
     # Raises:
         ValueError: If `total budget` is not divisible by `batch size`.
     """
+
     def __init__(self, hyperparameter_list, total_budget, num_batches,
                  objective='max', max_classifiers=18):
-
         super(SHAC, self).__init__(hyperparameter_list, total_budget,
                                    num_batches=num_batches, objective=objective,
                                    max_classifiers=max_classifiers)

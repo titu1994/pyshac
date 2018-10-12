@@ -1,12 +1,11 @@
-import os
-import json
 import codecs
-import numpy as np
-import pandas as pd
+import json
+import os
 from collections import OrderedDict
 
+import numpy as np
+import pandas as pd
 import pyshac.config.hyperparameters as hp
-
 
 # compatible with both Python 2 and 3
 try:

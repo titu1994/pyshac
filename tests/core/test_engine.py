@@ -28,6 +28,23 @@ def optimizer_wrapper(func):
     return wrapper
 
 
+def create_mock_dataset():
+    np.random.seed(0)
+
+    with open('shac/mock.csv', 'w') as f:
+        f.write('id,x,y,scores\n')
+        f.flush()
+
+        template = '%d,%0.4f,%0.4f,%0.5f\n'
+
+        for i in range(1000):
+            x = np.random.uniform(-1., 1.)
+            y = np.random.normal(0, 5.)
+            score = x ** 2 + y ** 3
+            f.write(template % (i, x, y, score))
+            f.flush()
+
+
 def get_hyperparameter_list():
     h1 = hp.DiscreteHyperParameter('h1', [0, 1, 2])
     h2 = hp.DiscreteHyperParameter('h2', [3, 4, 5, 6])
@@ -454,6 +471,172 @@ def test_shac_simple_torch():
     np.random.seed(0)
     predictions = shac.predict(num_batches=10, num_workers_per_batch=1)
     pred_evals = [evaluation_simple(0, pred) for pred in predictions]
+    pred_mean = np.mean(pred_evals)
+
+    print()
+    print("Random mean : ", random_mean)
+    print("Predicted mean : ", pred_mean)
+
+    assert random_mean < pred_mean
+
+    # test no file found, yet no error
+    shutil.rmtree('shac/')
+    shac2.restore_data()
+
+
+@optimizer_wrapper
+def test_shac_fit_dataset():
+    total_budget = 1000
+    batch_size = 5
+    objective = 'max'
+
+    params = [hp.UniformHP('x', -1., 1.),
+              hp.NormalHP('y', 0., 5.)]
+    h = hp.HyperParameterList(params)
+
+    shac = engine.SHAC(h, total_budget=total_budget,
+                       num_batches=batch_size, objective=objective)
+
+    # create the mock dataset
+    create_mock_dataset()
+
+    assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
+    assert shac._per_classifier_budget == 200
+    assert shac.num_workers == 200
+    assert len(shac.classifiers) == 0
+    assert len(shac.dataset) == 0
+
+    # do sequential work for debugging
+    shac.num_parallel_generators = 2
+    shac.num_parallel_evaluators = 2
+
+    print("Evaluating before training")
+    np.random.seed(0)
+
+    # training
+    shac.fit_dataset('shac/mock.csv')
+
+    assert len(shac.classifiers) <= shac.total_classifiers
+    assert os.path.exists('shac/datasets/dataset.csv')
+    assert os.path.exists('shac/classifiers/classifiers.pkl')
+
+    print()
+    print("Evaluating after training")
+    np.random.seed(0)
+    predictions = shac.predict(num_batches=16, num_workers_per_batch=1)
+
+    def eval_fn(id, pred):
+        return pred['x'] ** 2 + pred['y'] ** 3
+
+    pred_evals = [eval_fn(0, pred) for pred in predictions]
+    pred_mean = np.mean(pred_evals)
+
+    random_x = np.random.uniform(-1., 1., size=1000)
+    random_y = np.random.normal(0., 5., size=1000)
+    random_eval = random_x ** 2 + random_y ** 3
+    random_mean = np.mean(random_eval)
+
+    print()
+    print("Random mean : ", random_mean)
+    print("Predicted mean : ", pred_mean)
+
+    assert random_mean < pred_mean
+
+    # Serialization
+    shac.save_data()
+
+    # Restore with different batchsize
+    shac2 = engine.SHAC(None, total_budget=total_budget,
+                        num_batches=10, objective=objective)
+
+    shac2.restore_data()
+
+    np.random.seed(0)
+    predictions = shac.predict(num_batches=10, num_workers_per_batch=1)
+    pred_evals = [eval_fn(0, pred) for pred in predictions]
+    pred_mean = np.mean(pred_evals)
+
+    print()
+    print("Random mean : ", random_mean)
+    print("Predicted mean : ", pred_mean)
+
+    assert random_mean < pred_mean
+
+    # test no file found, yet no error
+    shutil.rmtree('shac/')
+    shac2.restore_data()
+
+
+@optimizer_wrapper
+def test_shac_fit_dataset_presort():
+    total_budget = 1000
+    batch_size = 5
+    objective = 'max'
+
+    params = [hp.UniformHP('x', -1., 1.),
+              hp.NormalHP('y', 0., 5.)]
+    h = hp.HyperParameterList(params)
+
+    shac = engine.SHAC(h, total_budget=total_budget,
+                       num_batches=batch_size, objective=objective)
+
+    # create the mock dataset
+    create_mock_dataset()
+
+    assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
+    assert shac._per_classifier_budget == 200
+    assert shac.num_workers == 200
+    assert len(shac.classifiers) == 0
+    assert len(shac.dataset) == 0
+
+    # do sequential work for debugging
+    shac.num_parallel_generators = 2
+    shac.num_parallel_evaluators = 2
+
+    print("Evaluating before training")
+    np.random.seed(0)
+
+    # training
+    shac.fit_dataset('shac/mock.csv', presort=True, skip_cv_checks=True, early_stop=True)
+
+    assert len(shac.classifiers) <= shac.total_classifiers
+    assert os.path.exists('shac/datasets/dataset.csv')
+    assert os.path.exists('shac/classifiers/classifiers.pkl')
+
+    print()
+    print("Evaluating after training")
+    np.random.seed(0)
+    predictions = shac.predict(num_batches=16, num_workers_per_batch=1)
+
+    def eval_fn(id, pred):
+        return pred['x'] ** 2 + pred['y'] ** 3
+
+    pred_evals = [eval_fn(0, pred) for pred in predictions]
+    pred_mean = np.mean(pred_evals)
+
+    random_x = np.random.uniform(-1., 1., size=1000)
+    random_y = np.random.normal(0., 5., size=1000)
+    random_eval = random_x ** 2 + random_y ** 3
+    random_mean = np.mean(random_eval)
+
+    print()
+    print("Random mean : ", random_mean)
+    print("Predicted mean : ", pred_mean)
+
+    assert random_mean < pred_mean
+
+    # Serialization
+    shac.save_data()
+
+    # Restore with different batchsize
+    shac2 = engine.SHAC(None, total_budget=total_budget,
+                        num_batches=10, objective=objective)
+
+    shac2.restore_data()
+
+    np.random.seed(0)
+    predictions = shac.predict(num_batches=10, num_workers_per_batch=1)
+    pred_evals = [eval_fn(0, pred) for pred in predictions]
     pred_mean = np.mean(pred_evals)
 
     print()

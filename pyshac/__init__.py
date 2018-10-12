@@ -5,4 +5,4 @@ from pyshac.config.hyperparameters import HyperParameterList
 from pyshac.config.data import Dataset
 from pyshac.core.engine import SHAC
 
-__version__ = '0.3.0'
+__version__ = '0.3.0.1'

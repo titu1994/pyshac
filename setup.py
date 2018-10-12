@@ -1,11 +1,10 @@
 from setuptools import setup, find_packages
 import re
 import os
-import codecs
+import io
 
 this_directory = os.path.abspath(os.path.dirname(__file__))
-with codecs.open(os.path.join(this_directory, 'README.md'), encoding='utf-8',
-                 buffering=0) as f:
+with io.open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 

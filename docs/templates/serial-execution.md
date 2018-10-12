@@ -19,7 +19,7 @@ engines :
 
 ```python
 
-shac = SHAC(eval_fn, [params...], total_budget, batch_size)
+shac = SHAC([params...], total_budget, batch_size)
 
 # This sets the engine to serial execution
 shac.set_num_parallel_evaluators(1)
@@ -35,7 +35,7 @@ engines :
 
 ```python
 
-shac = SHAC(eval_fn, [params...], total_budget, batch_size)
+shac = SHAC([params...], total_budget, batch_size)
 
 # This sets the engine to serial execution
 shac.set_num_parallel_generators(1)

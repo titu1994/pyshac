@@ -40,6 +40,7 @@ There are a few requirements for the engine when loading external datasets.
 
 1) The parameter list provided to the engine must match the parameter list of the dataset. It is not
 possible to provide an empty HyperParameter list when training via an external dataset.
+
 2) The number of samples in the dataset must be greater than or equal to the total budget. If it is
 greater than the total budget, the additional samples will not be used for training.
 

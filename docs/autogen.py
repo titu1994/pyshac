@@ -70,6 +70,7 @@ PAGES = [
         'classes': [
             (optimizer.SHAC, [
                 optimizer.SHAC.fit,
+                optimizer.SHAC.fit_dataset,
                 optimizer.SHAC.predict,
                 optimizer.SHAC.save_data,
                 optimizer.SHAC.restore_data,
@@ -85,6 +86,7 @@ PAGES = [
         'classes': [
             (tf_optimizer.TensorflowSHAC, [
                 tf_optimizer.TensorflowSHAC.fit,
+                tf_optimizer.TensorflowSHAC.fit_dataset,
                 tf_optimizer.TensorflowSHAC.predict,
                 tf_optimizer.TensorflowSHAC.save_data,
                 tf_optimizer.TensorflowSHAC.restore_data,
@@ -100,6 +102,7 @@ PAGES = [
         'classes': [
             (keras_optimizer.KerasSHAC, [
                 keras_optimizer.KerasSHAC.fit,
+                keras_optimizer.KerasSHAC.fit_dataset,
                 keras_optimizer.KerasSHAC.predict,
                 keras_optimizer.KerasSHAC.save_data,
                 keras_optimizer.KerasSHAC.restore_data,
@@ -115,6 +118,7 @@ PAGES = [
         'classes': [
             (torch_optimizer.TorchSHAC, [
                 torch_optimizer.TorchSHAC.fit,
+                torch_optimizer.TorchSHAC.fit_dataset,
                 torch_optimizer.TorchSHAC.predict,
                 torch_optimizer.TorchSHAC.save_data,
                 torch_optimizer.TorchSHAC.restore_data,
@@ -146,7 +150,7 @@ PAGES = [
 ]
 
 # TODO: Add this
-ROOT = ''
+ROOT = 'http://titu1994.github.io/pyshac/'
 
 
 def get_function_signature(function, method=True):

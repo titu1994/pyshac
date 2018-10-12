@@ -6,6 +6,9 @@ import pytest
 import warnings
 import numpy as np
 
+import matplotlib
+matplotlib.use('Agg')
+
 from pyshac.config import hyperparameters as hp, data
 from pyshac.utils import vis_utils
 
@@ -42,8 +45,6 @@ def get_hyperparameter_list():
 
 
 @viz_wrapper
-@pytest.mark.skipif(sys.version_info[0] < 3,
-                    reason="Requires python 3 to test")
 def test_plot_dataset():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)

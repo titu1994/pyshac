@@ -4,7 +4,6 @@ import six
 import pytest
 import warnings
 import numpy as np
-import matplotlib as mpl
 
 from pyshac.config import hyperparameters as hp, data
 from pyshac.utils import vis_utils

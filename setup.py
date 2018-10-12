@@ -36,9 +36,9 @@ setup(
                       'cloudpickle>=0.6.1',
                       'six>=1.11.0',
                       'xgboost>=0.80',
-                      'matplotlib>=3.0.0'],
+                      'matplotlib>=3.0.0;python_version<"3.0"'],
     extras_require={
-        'tests': ['coverage', 'pytest-cov', 'codecov'],
+        'tests': ['coverage', 'pytest-cov', 'codecov', 'matplotlib>=2.2.3'],
     },
     classifiers=(
         "Programming Language :: Python :: 2",

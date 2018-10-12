@@ -22,7 +22,9 @@ To install the master branch of this library :
 ```
 git clone https://github.com/titu1994/pyshac.git
 cd pyshac
-python setup.py install
+pip install .
+
+or pip install .[tests]  # to also include dependencies necessary for testing
 ```
 
 To install the requirements before installing the library :

@@ -71,5 +71,6 @@ def plot_dataset(dataset, to_file='dataset.png',
         if len(head) == 0:
             fig.savefig(to_file)
         else:
-            os.makedirs(head, exist_ok=True)
+            if not os.path.exists(head):
+                os.makedirs(head)
             fig.savefig(to_file)

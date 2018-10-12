@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import six
 import pytest
@@ -41,6 +42,8 @@ def get_hyperparameter_list():
 
 
 @viz_wrapper
+@pytest.mark.skipif(sys.version_info[0] < 3,
+                    reason="Requires python 3 to test")
 def test_plot_dataset():
     params = get_hyperparameter_list()
     h = hp.HyperParameterList(params)

@@ -514,7 +514,7 @@ def test_shac_fit_dataset():
     np.random.seed(0)
 
     # training
-    shac.fit_dataset('shac/mock.csv')
+    shac.fit_dataset('shac/mock.csv', presort=False)
 
     assert len(shac.classifiers) <= shac.total_classifiers
     assert os.path.exists('shac/datasets/dataset.csv')

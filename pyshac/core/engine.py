@@ -266,7 +266,7 @@ class _SHAC(ABC):
 
         print("Finished training all models !")
 
-    def fit_dataset(self, dataset_path, skip_cv_checks=False, early_stop=False, presort=False):
+    def fit_dataset(self, dataset_path, skip_cv_checks=False, early_stop=False, presort=True):
         """
         Uses the provided dataset file to train the engine, instead of using
         the sequentual halving and classification algorithm directly. The data
@@ -292,15 +292,16 @@ class _SHAC(ABC):
         # Arguments:
             dataset_path (str): The full or relative path to a csv file
                 containing the values of the dataset.
-            skip_cv_checks (bool): If set, will not perform 5 fold cross validation check
-                on the models before adding them to the classifer list. Useful when the
-                batch size is small.
-            early_stop (bool): Stop running if fail to find a classifier that beats the
-                last stage of evaluations.
+            skip_cv_checks (bool): If set, will not perform 5 fold cross
+                validation check on the models before adding them to the
+                classifer list. Useful when the batch size is small.
+            early_stop (bool): Stop running if fail to find a classifier
+                that beats the last stage of evaluations.
             presort (bool): Boolean flag to determine whether to sort
                 the values of the dataset prior to loading. Ascending or
                 descending sort is selected based on whether the engine
-                is maximizing or minimizing the objective.
+                is maximizing or minimizing the objective. It is preferable
+                to set this always, to train better classifiers.
 
         # Raises:
             ValueError: If the number of hyper parameters in the file

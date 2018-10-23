@@ -41,6 +41,7 @@ pages:
 - Config:
   - Hyper Parameters: config/hyperparameters.md
   - Datasets: config/data.md
+  - Callbacks: config/callbacks.md
 - Core:
   - SHAC: core/engine.md
   - PyTorch SHAC: core/torch_engine.md

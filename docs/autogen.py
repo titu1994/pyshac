@@ -10,6 +10,7 @@ import shutil
 import pyshac
 import pyshac.config.hyperparameters as hp
 import pyshac.config.data as data
+import pyshac.config.callbacks as callbacks
 import pyshac.core.engine as optimizer
 import pyshac.core.managed.tf_engine as tf_optimizer
 import pyshac.core.managed.keras_engine as keras_optimizer
@@ -64,6 +65,17 @@ PAGES = [
         'classes': [
             (data.Dataset, '*'),
         ],
+    },
+    {
+        'page': 'config/callbacks.md',
+        'classes': [
+            (callbacks.Callback, '*'),
+            (callbacks.History, []),
+            (callbacks.CSVLogger, []),
+        ],
+        'functions': [
+            callbacks.get_history,
+        ]
     },
     {
         'page': 'core/engine.md',

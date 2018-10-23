@@ -61,24 +61,78 @@ class Callback(object):
         self.engine = engine
 
     def on_train_begin(self, logs=None):
+        """
+        Called at the beginning of training.
+
+        # Arguments
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
     def on_train_end(self, logs=None):
+        """
+        Called at the end of training.
+
+        # Arguments
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
     def on_epoch_begin(self, epoch, logs=None):
+        """
+        Called at the start of an epoch.
+
+        # Arguments
+            epoch (int): index of epoch.
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+        Called at the end of an epoch.
+
+        # Arguments
+            epoch (int): index of epoch.
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
     def on_evaluation_begin(self, params, logs=None):
+        """
+        Called before the generated parameters are evaluated.
+
+        # Arguments:
+            params (list(OrderedDict)): A list of OrderedDicts,
+                such that each item is a dictionary of the names
+                and sampled values of a HyperParemeterList.
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
     def on_evaluation_ended(self, evaluations, logs=None):
+        """
+        Called after the generated parameters are evaluated.
+
+        # Arguments:
+            evaluations (list(float)): A list of floating point
+                values, corresponding to the provided parameter
+                settings.
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
     def on_dataset_changed(self, dataset, logs=None):
+        """
+        Called with the dataset maintained by the engine is
+        updated with new samples or data.
+
+        # Arguments:
+            dataset (Dataset): A Dataset object which contains
+                the history of sampled parameters and their
+                corresponding evaluation values.
+            logs (dict | None): dictionary of logs.
+        """
         pass
 
 
@@ -229,10 +283,23 @@ class History(Callback):
         super(History, self).__init__()
 
     def on_train_begin(self, logs=None):
+        """
+        Initializes the epoch list and history dictionary.
+
+        # Arguments:
+            logs (dict | None): dictionary of logs.
+        """
         self.epochs = []
         self.history = logs or {}
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+        Adds the current epoch's log values to the history.
+
+        # Arguments:
+            epoch (int): index of epoch.
+            logs (dict | None): dictionary of logs.
+        """
         logs = logs or {}
         self.epochs.append(epoch)
 

@@ -163,6 +163,11 @@ class _SHAC(ABC):
             callbacks (list | None): Optional list of callbacks that are executed when
                 the engine is being trained. `History` callback is automatically added
                 for all calls to `fit`.
+
+        # Returns:
+            A `History` object which tracks all the important information
+            during training, and can be accessed using `history.history`
+            as a dictionary.
         """
         num_epochs = self.total_budget // self.num_workers
 
@@ -361,6 +366,11 @@ class _SHAC(ABC):
                 required number of samples by the engine.
             FileNotFoundError: If the dataset is not available at the
                 provided filepath.
+
+        # Returns:
+            A `History` object which tracks all the important information
+            during training, and can be accessed using `history.history`
+            as a dictionary.
         """
         if self.parameters is None:
             raise ValueError("Parameter list cannot be `None` when training "
@@ -1149,6 +1159,11 @@ class SHAC(_SHAC):
             callbacks (list | None): Optional list of callbacks that are executed when
                 the engine is being trained. `History` callback is automatically added
                 for all calls to `fit`.
+
+        # Returns:
+            A `History` object which tracks all the important information
+            during training, and can be accessed using `history.history`
+            as a dictionary.
         """
         return super(SHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks,
                                      early_stop=early_stop, relax_checks=relax_checks,

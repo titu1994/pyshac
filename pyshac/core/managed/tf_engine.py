@@ -156,6 +156,11 @@ class TensorflowSHAC(optimizer._SHAC):
             callbacks (list | None): Optional list of callbacks that are executed when
                 the engine is being trained. `History` callback is automatically added
                 for all calls to `fit`.
+
+        # Returns:
+            A `History` object which tracks all the important information
+            during training, and can be accessed using `history.history`
+            as a dictionary.
         """
         return super(TensorflowSHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks,
                                                early_stop=early_stop, relax_checks=relax_checks,

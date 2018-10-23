@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pyshac.config.data as data
 import pyshac.config.hyperparameters as hp
+import pyshac.config.callbacks as cb
 import pyshac.utils.xgb_utils as xgb_utils
 import xgboost as xgb
 from joblib import Parallel, delayed
@@ -116,7 +117,8 @@ class _SHAC(ABC):
         """
         raise NotImplementedError()
 
-    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False):
+    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False,
+            callbacks=None):
         """
         Generated batches of samples, trains `total_classifiers` number of XGBoost models
         and evaluates each batch with the supplied function in parallel.
@@ -158,6 +160,9 @@ class _SHAC(ABC):
                 checks from all classifiers. Can be useful when large number of models
                 are present and remaining search space is not big enough to allow sample
                 to pass through all checks.
+            callbacks (list | None): Optional list of callbacks that are executed when
+                the engine is being trained. `History` callback is automatically added
+                for all calls to `fit`.
         """
         num_epochs = self.total_budget // self.num_workers
 
@@ -165,6 +170,10 @@ class _SHAC(ABC):
             num_splits = 1
         else:
             num_splits = 5
+
+        # Prepare callback list
+        callback_list = cb.CallbackList(callbacks)
+        callback_list.set_engine(self)
 
         print("Training with %d generator (%s backend) and %d evaluator threads (%s backend) "
               "with a batch size of %d" % (
@@ -176,7 +185,11 @@ class _SHAC(ABC):
         # if restarting training on older dataset, skip the older samples
         begin_run_index = len(self.dataset)
 
+        callback_list.on_train_begin({'begin_run_index': begin_run_index})
+
         for run_index in range(begin_run_index, self.total_budget, self.num_workers):
+            # initialize logs
+            logs = {}
 
             current_epoch = (run_index // self.num_workers) + 1
             print("Beginning epoch %0.4d out of %0.4d" % (current_epoch, num_epochs))
@@ -193,6 +206,11 @@ class _SHAC(ABC):
             else:
                 generator_threads = self.num_parallel_generators
 
+            # Log per classifier budget and number of generator threads
+            logs['generator_threads'] = generator_threads
+            logs['per_classifier_budget'] = self._per_classifier_budget
+            callback_list.on_epoch_begin(current_epoch, logs)
+
             with Parallel(generator_threads, temp_folder=self.temp_dir,
                           backend=gen_backend, verbose=10, prefer=prefer) as parallel_generator:
 
@@ -208,6 +226,10 @@ class _SHAC(ABC):
             with Parallel(self._num_parallel_evaluators, temp_folder=self.temp_dir,
                           backend=self._evaluator_backend, verbose=10, prefer=prefer) as parallel_evaluator:
 
+                # Log the parameters sampled
+                logs['parameters'] = params
+                callback_list.on_evaluation_begin(params, logs)
+
                 # parallel evaluation
                 eval_values = parallel_evaluator(delayed(self._evaluation_handler)(eval_fn,
                                                                                    wid % self._num_parallel_evaluators,
@@ -218,12 +240,25 @@ class _SHAC(ABC):
             eval_values = list(eval_values)
             print("Finished evaluating %d samples" % len(eval_values))
 
+            # Log the evaluated values of the provided parameters
+            logs['device_ids'] = [wid % self._num_parallel_evaluators
+                                  for wid in range(len(params))]
+            logs['evaluations'] = eval_values
+            callback_list.on_evaluation_ended(eval_values, logs)
+
             # serial adding of data to dataset for consistency
             for x, y in zip(samples, eval_values):
                 self.dataset.add_sample(x, y)
 
+            # Log the updated samples in the dataset and the dataset index
+            logs['dataset_index'] = self._dataset_index
+            callback_list.on_dataset_changed(self.dataset, logs)
+
             # get the dataset as numpy arrays
             x, y = self._get_dataset_samples()
+
+            # Log the generated model
+            logs['model'] = None
 
             if len(y) >= self._per_classifier_budget:
                 # encode the dataset to prepare for training
@@ -232,6 +267,9 @@ class _SHAC(ABC):
                 # train a classifier on the encoded dataset
                 model = self._train_classifier(x, y, num_splits=num_splits)
                 print("Finished training the %d-th classifier" % (len(self.classifiers) + 1))
+
+                # Log the generated model
+                logs['model'] = model
 
                 # check if model failed to train for some reason
                 if model is not None:
@@ -264,9 +302,18 @@ class _SHAC(ABC):
             self.save_data()
             print()
 
+            # Call at end of epoch of training.
+            callback_list.on_epoch_end(current_epoch, logs)
+
         print("Finished training all models !")
 
-    def fit_dataset(self, dataset_path, skip_cv_checks=False, early_stop=False, presort=True):
+        history = cb.get_history(callback_list)
+        callback_list.on_train_end(history.history)
+
+        return history
+
+    def fit_dataset(self, dataset_path, skip_cv_checks=False, early_stop=False, presort=True,
+                    callbacks=None):
         """
         Uses the provided dataset file to train the engine, instead of using
         the sequentual halving and classification algorithm directly. The data
@@ -302,6 +349,9 @@ class _SHAC(ABC):
                 descending sort is selected based on whether the engine
                 is maximizing or minimizing the objective. It is preferable
                 to set this always, to train better classifiers.
+            callbacks (list | None): Optional list of callbacks that are executed when
+                the engine is being trained. `History` callback is automatically added
+                for all calls to `fit_dataset`.
 
         # Raises:
             ValueError: If the number of hyper parameters in the file
@@ -323,28 +373,44 @@ class _SHAC(ABC):
         else:
             num_splits = 5
 
+        # Prepare callback list
+        callback_list = cb.CallbackList(callbacks)
+        callback_list.set_engine(self)
+
         # Reset the original dataset
         self._dataset_index = 0
         self.dataset.clear()
 
         # Load the dataset into memory
         self._rebuild_dataset(dataset_path, presort)
+        callback_list.on_dataset_changed(self.dataset)
 
         X, Y = self.dataset.get_dataset()
 
         begin_run_index = 0
 
+        callback_list.on_train_begin({'begin_run_index': 0})
+
         for run_index in range(begin_run_index, self.total_budget, self.num_workers):
+            # initialize logs
+            logs = {}
 
             current_epoch = (run_index // self.num_workers) + 1
             print("Beginning epoch %0.4d out of %0.4d" % (current_epoch, num_epochs))
             print("Number of classifiers availale = %d (%d samples generated per accepted "
                   "sample on average)" % (len(self.classifiers), 2 ** len(self.classifiers)))
 
+            # Log per classifier budget
+            logs['per_classifier_budget'] = self._per_classifier_budget
+            callback_list.on_epoch_begin(current_epoch, logs)
+
             # Extract the samples from the dataset
             params = X[run_index: run_index + self.num_workers]
-
             print("Finished generating %d samples" % len(params))
+
+            # Log the extracted parameters
+            logs['parameters'] = params
+            callback_list.on_evaluation_begin(params, logs)
 
             # Extract the evaluation results from the dataset
             eval_values = Y[run_index: run_index + self.num_workers]
@@ -353,9 +419,16 @@ class _SHAC(ABC):
             eval_values = list(eval_values)
             print("Finished evaluating %d samples" % len(eval_values))
 
+            # Log the evaluations from the provided parameters
+            logs['evaluations'] = eval_values
+            callback_list.on_evaluation_ended(eval_values, logs)
+
             # get the dataset as numpy arrays
             x = np.array(params, dtype=np.object)
             y = np.array(eval_values, dtype=np.object)
+
+            # Log the model generated
+            logs['model'] = None
 
             if len(y) >= self._per_classifier_budget:
                 # encode the dataset to prepare for training
@@ -364,6 +437,9 @@ class _SHAC(ABC):
                 # train a classifier on the encoded dataset
                 model = self._train_classifier(x, y, num_splits=num_splits)
                 print("Finished training the %d-th classifier" % (len(self.classifiers) + 1))
+
+                # Log the model generated
+                logs['model'] = model
 
                 # check if model failed to train for some reason
                 if model is not None:
@@ -395,7 +471,15 @@ class _SHAC(ABC):
             self.save_data()
             print()
 
+            # Call after end of epoch of training
+            callback_list.on_epoch_end(current_epoch, logs)
+
         print("Finished training all models !")
+
+        history = cb.get_history(callback_list)
+        callback_list.on_train_end(history.history)
+
+        return history
 
     def predict(self, num_samples=None, num_batches=None, num_workers_per_batch=None, relax_checks=False,
                 max_classfiers=None):
@@ -1019,7 +1103,8 @@ class SHAC(_SHAC):
         output = float(output)
         return output
 
-    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False):
+    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False,
+            callbacks=None):
         """
         Generated batches of samples, trains `total_classifiers` number of XGBoost models
         and evaluates each batch with the supplied function in parallel.
@@ -1061,6 +1146,10 @@ class SHAC(_SHAC):
                 checks from all classifiers. Can be useful when large number of models
                 are present and remaining search space is not big enough to allow sample
                 to pass through all checks.
+            callbacks (list | None): Optional list of callbacks that are executed when
+                the engine is being trained. `History` callback is automatically added
+                for all calls to `fit`.
         """
-        super(SHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks, early_stop=early_stop,
-                              relax_checks=relax_checks)
+        return super(SHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks,
+                                     early_stop=early_stop, relax_checks=relax_checks,
+                                     callbacks=callbacks)

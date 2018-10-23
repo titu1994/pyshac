@@ -148,6 +148,6 @@ if __name__ == '__main__':  # This isn't needed anymore for Windows for the Loky
 
     samples = shac.predict(5)
 
-    # generated a batch of 5 classifiers which can now be evaluated
+    # generated a batch of 5 samples which can now be evaluated
     for i, sample in enumerate(samples):
         print("Sample", i + 1, ": ", sample)

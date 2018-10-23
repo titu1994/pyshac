@@ -84,7 +84,8 @@ class TorchSHAC(optimizer._SHAC):
         output = float(output)
         return output
 
-    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False):
+    def fit(self, eval_fn, skip_cv_checks=False, early_stop=False, relax_checks=False,
+            callbacks=None):
         """
         Generated batches of samples, trains `total_classifiers` number of XGBoost models
         and evaluates each batch with the supplied function in parallel.
@@ -126,6 +127,10 @@ class TorchSHAC(optimizer._SHAC):
                 checks from all classifiers. Can be useful when large number of models
                 are present and remaining search space is not big enough to allow sample
                 to pass through all checks.
+            callbacks (list | None): Optional list of callbacks that are executed when
+                the engine is being trained. `History` callback is automatically added
+                for all calls to `fit`.
         """
-        super(TorchSHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks, early_stop=early_stop,
-                                   relax_checks=relax_checks)
+        return super(TorchSHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks,
+                                          early_stop=early_stop, relax_checks=relax_checks,
+                                          callbacks=callbacks)

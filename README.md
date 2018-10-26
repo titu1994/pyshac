@@ -9,6 +9,24 @@ PySHAC is a python library to use the Sequential Halving and Classification algo
 
 Note : This library is not affiliated with Google.
 
+## Documentation
+
+Stable build documentation can be found at [PySHAC Documentation](http://titu1994.github.io/pyshac/).
+
+It contains a User Guide, as well as explanation of the different engines that can be used with PySHAC.
+
+
+|   Topic     |  Link  |
+|:-------------:|:--------:|
+| Installation | http://titu1994.github.io/pyshac/install/   |
+| User Guide   |   http://titu1994.github.io/pyshac/guide/  |
+| Managed Engines   |   http://titu1994.github.io/pyshac/managed/  |
+| Custom Hyper Parameters   |   http://titu1994.github.io/pyshac/custom-hyper-parameters/  |
+| Serial Evaluation   |   http://titu1994.github.io/pyshac/serial-execution/  |
+| External Dataset Training   |   http://titu1994.github.io/pyshac/external-dataset-training/  |
+| Callbacks   |   http://titu1994.github.io/pyshac/callbacks/  |
+
+
 ## Installation
 
 This library is available for Python 2.7 and 3.4+ via pip for Windows, MacOSX and Linux.
@@ -37,12 +55,6 @@ To build the docs, additional packages must be installed :
 ```
 pip install -r "doc_requirements.txt"
 ```
-
-## Documentation
-
-Stable build documentation can be found at [PySHAC Documentation](http://titu1994.github.io/pyshac/).
-
-It contains a User Guide, as well as explanation of the different engines that can be used with PySHAC.
 
 ## Getting started with PySHAC
 

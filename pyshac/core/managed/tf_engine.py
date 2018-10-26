@@ -38,6 +38,8 @@ class TensorflowSHAC(optimizer._SHAC):
             to be trained simultaneously. If set to -1, uses all CPU cores to
             evaluate N models simultaneously. Will cause OOM if the models are
             large.
+        save_dir (str): The base directory where the data of the engine
+            will be stored.
 
     # References:
         - [Parallel Architecture and Hyperparameter Search via Successive Halving and Classification](https://arxiv.org/abs/1805.10255)
@@ -47,11 +49,12 @@ class TensorflowSHAC(optimizer._SHAC):
     """
     def __init__(self, hyperparameter_list, total_budget, num_batches,
                  max_gpu_evaluators, objective='max', max_classifiers=18,
-                 max_cpu_evaluators=1):
+                 max_cpu_evaluators=1, save_dir='shac'):
 
         super(TensorflowSHAC, self).__init__(hyperparameter_list, total_budget,
                                              num_batches=num_batches, objective=objective,
-                                             max_classifiers=max_classifiers)
+                                             max_classifiers=max_classifiers,
+                                             save_dir=save_dir)
 
         self.max_gpu_evaluators = max_gpu_evaluators
 

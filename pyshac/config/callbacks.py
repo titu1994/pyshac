@@ -369,6 +369,9 @@ class CSVLogger(Callback):
         if self.keys is None:
             self.keys = sorted(logs.keys())
 
+        if 'model' in self.keys:
+            self.keys.remove('model')
+
         if not self.writer:
             class CustomDialect(csv.excel):
                 delimiter = self.sep

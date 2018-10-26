@@ -34,6 +34,10 @@ def cleanup_dirs(func):
         # remove temporary files
         if os.path.exists('shac/'):
             shutil.rmtree('shac/')
+
+        if os.path.exists('custom/'):
+            shutil.rmtree('custom/')
+
         return output
     return wrapper
 
@@ -68,6 +72,16 @@ def test_dataset_basedir():
 
     dataset = data.Dataset(h)
     assert os.path.exists(dataset.basedir)
+
+
+@cleanup_dirs
+def test_dataset_basedir_custom():
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    dataset = data.Dataset(h, basedir='custom')
+    assert os.path.exists(dataset.basedir)
+    assert not os.path.exists('shac')
 
 
 @cleanup_dirs
@@ -208,6 +222,59 @@ def test_dataset_serialization_deserialization():
 
     # serialization of empty get_dataset
     dataset = data.Dataset()
+
+    with pytest.raises(FileNotFoundError):
+        dataset.load_from_directory('null')
+
+    with pytest.raises(ValueError):
+        dataset.save_dataset()
+
+
+@cleanup_dirs
+def test_dataset_serialization_deserialization_custom_basepath():
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    dataset = data.Dataset(h, basedir='custom')
+
+    samples = [(h.sample(), np.random.uniform()) for _ in range(5)]
+    for sample in samples:
+        dataset.add_sample(*sample)
+
+    # serialization
+    dataset.save_dataset()
+
+    assert len(dataset) == 5
+    assert os.path.exists(dataset.data_path)
+    assert os.path.exists(dataset.parameter_path)
+
+    # deserialization
+    dataset.clear()
+    assert len(dataset) == 0
+
+    dataset.restore_dataset()
+
+    assert len(dataset) == 5
+    assert os.path.exists(dataset.data_path)
+    assert os.path.exists(dataset.parameter_path)
+
+    # deserialization from class
+    path = os.path.join('custom', 'datasets')
+    dataset2 = data.Dataset.load_from_directory(path)
+
+    assert dataset2.parameters is not None
+    assert len(dataset2.X) == 5
+    assert len(dataset2.Y) == 5
+    assert len(dataset2) == 5
+
+    dataset3 = data.Dataset.load_from_directory('custom')
+
+    assert dataset3.parameters is not None
+    assert len(dataset3.X) == 5
+    assert len(dataset3.Y) == 5
+
+    # serialization of empty get_dataset
+    dataset = data.Dataset(basedir='custom')
 
     with pytest.raises(FileNotFoundError):
         dataset.load_from_directory('null')

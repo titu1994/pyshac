@@ -30,6 +30,10 @@ def xgb_wrapper(func):
         # remove temporary files
         if os.path.exists('shac/'):
             shutil.rmtree('shac/')
+
+        if os.path.exists('custom/'):
+            shutil.rmtree('custom/')
+
         return output
     return wrapper
 
@@ -171,6 +175,38 @@ def test_serialization_deserialization():
     h = hp.HyperParameterList(params)
 
     dataset = data.Dataset(h)
+
+    # models
+    clfs = []
+
+    # fit samples
+    num_samples = 16
+    for i in range(3):
+        samples = [h.sample() for _ in range(num_samples)]
+        labels = [np.sum(sample) for sample in samples]
+        x, y = samples, labels
+        x, y = dataset.encode_dataset(x, y)
+        model = xgb_utils.train_single_model(x, y)
+        clfs.append(model)
+
+    xgb_utils.save_classifiers(clfs, basepath)
+    assert os.path.exists(os.path.join(basepath, 'classifiers', 'classifiers.pkl'))
+
+    models = xgb_utils.restore_classifiers(basepath)
+    assert len(models) == len(clfs)
+
+    with pytest.raises(FileNotFoundError):
+        models = xgb_utils.restore_classifiers('none')
+
+
+@xgb_wrapper
+def test_serialization_deserialization_custom_basepath():
+    basepath = 'custom'
+
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    dataset = data.Dataset(h, basepath)
 
     # models
     clfs = []

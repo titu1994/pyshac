@@ -25,8 +25,10 @@ class Dataset(object):
             parameter_list (hp.HyperParameterList | list | None): A python list
                 of Hyper Parameters, or a HyperParameterList that has been built.
                 Can also be None, if the parameters are to be assigned later.
+            basedir (str): The base directory where the data of the engine
+                will be stored.
     """
-    def __init__(self, parameter_list=None):
+    def __init__(self, parameter_list=None, basedir='shac'):
 
         if not isinstance(parameter_list, hp.HyperParameterList):
             if type(parameter_list) == list or type(parameter_list) == tuple:
@@ -37,7 +39,7 @@ class Dataset(object):
         self.Y = []
         self.size = 0
 
-        self.basedir = 'shac'
+        self.basedir = basedir
         self._prepare_dir()
 
     def add_sample(self, parameters, value):
@@ -332,6 +334,7 @@ class Dataset(object):
         Creates the directories needed to save the data and parameters.
         """
         path = os.path.join(self.basedir, 'datasets')
+
         if not os.path.exists(path):
             os.makedirs(path)
 
@@ -339,19 +342,21 @@ class Dataset(object):
         self.parameter_path = os.path.join(path, 'parameters.json')
     
     @classmethod
-    def load_from_directory(cls, dir='shac'):
+    def load_from_directory(cls, basedir='shac'):
         """
         Static method to load the dataset from a directory.
 
         # Arguments:
-            dir: The base directory where 'shac' directory is. It will build the path
-                to the data and parameters itself.
+            basedir (str): The base directory where 'shac' directory is. It will
+                build the path to the data and parameters itself.
 
         # Raises:
             FileNotFoundError: If the directory does not contain the data and parameters.
         """
-        if dir == 'shac':
-            dir = os.path.join(dir, 'datasets')
+        if 'datasets' not in basedir:
+            dir = os.path.join(basedir, 'datasets')
+        else:
+            dir = basedir
 
         data_path = os.path.join(dir, 'dataset.csv')
         parameter_path = os.path.join(dir, 'parameters.json')
@@ -375,7 +380,7 @@ class Dataset(object):
             param_config = json.load(f, object_pairs_hook=OrderedDict)
             parameters = hp.HyperParameterList.load_from_config(param_config)
 
-        obj = cls(parameters)
+        obj = cls(parameters, basedir)
         obj.set_dataset(X, Y)
 
         return obj

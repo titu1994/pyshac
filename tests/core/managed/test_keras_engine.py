@@ -29,6 +29,10 @@ def tf_optimizer_wrapper(func):
         # remove temporary files
         if os.path.exists('shac/'):
             shutil.rmtree('shac/')
+
+        if os.path.exists('custom/'):
+            shutil.rmtree('custom/')
+
         return output
     return wrapper
 
@@ -374,6 +378,56 @@ def test_shac_simple():
 
     # test no file found, yet no error
     shutil.rmtree('shac/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
+    shac2.restore_data()
+
+
+@tf_optimizer_wrapper
+def test_shac_simple_custom_basepath():
+    total_budget = 50
+    batch_size = 5
+    objective = 'max'
+
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    shac = engine.KerasSHAC(h, total_budget=total_budget, max_gpu_evaluators=1,
+                            num_batches=batch_size, objective=objective,
+                            save_dir='custom')
+
+    assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
+    assert shac._per_classifier_budget == 10
+    assert shac.num_workers == 10
+    assert len(shac.classifiers) == 0
+    assert len(shac.dataset) == 0
+
+    # do sequential work for debugging
+    shac.num_parallel_generators = 1
+    shac.num_parallel_evaluators = 1
+
+    # training
+    shac.fit(evaluation_simple_keras_tf)
+
+    assert len(shac.classifiers) <= shac.total_classifiers
+    assert os.path.exists('custom/datasets/dataset.csv')
+    assert os.path.exists('custom/classifiers/classifiers.pkl')
+
+    # Serialization
+    shac.save_data()
+
+    # Restore with different batchsize
+    shac2 = engine.KerasSHAC(None, total_budget=total_budget, max_gpu_evaluators=0,
+                             num_batches=10, objective=objective, save_dir='custom')
+
+    shac2.restore_data()
+
+    # test no file found, yet no error
+    shutil.rmtree('custom/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
     shac2.restore_data()
 
 

@@ -44,6 +44,8 @@ class _SHAC(ABC):
             the evaluation measure or minimize it.
         max_classifiers (int): Maximum number of classifiers that
             are trained. Default (18) is according to the paper.
+        save_dir (str): The base directory where the data of the engine
+            will be stored.
 
     # References:
         - [Parallel Architecture and Hyperparameter Search via Successive Halving and Classification](https://arxiv.org/abs/1805.10255)
@@ -54,13 +56,16 @@ class _SHAC(ABC):
     """
 
     def __init__(self, hyperparameter_list, total_budget, num_batches,
-                 objective='max', max_classifiers=18):
+                 objective='max', max_classifiers=18, save_dir='shac'):
         if total_budget % num_batches != 0:
             raise ValueError("Number of epochs must be divisible by the batch size !")
 
         if hyperparameter_list is not None and (
                 not isinstance(hyperparameter_list, hp.HyperParameterList)):
             hyperparameter_list = hp.HyperParameterList(hyperparameter_list)
+
+        if save_dir is None or save_dir == '':
+            save_dir = 'shac'
 
         print("Number of workers possible : %d" % (total_budget // num_batches))
 
@@ -74,8 +79,8 @@ class _SHAC(ABC):
         self._total_classifiers = min(max(num_batches - 1, 1), max_classifiers)  # K
 
         # serializable
-        self.dataset = data.Dataset(hyperparameter_list)
-        self.classifiers = []  # type: list(xgb.XGBClassifier)
+        self.dataset = data.Dataset(hyperparameter_list, save_dir)
+        self.classifiers = []  # type: list[xgb.XGBClassifier]
 
         # training variables
         self._dataset_index = 0
@@ -92,6 +97,7 @@ class _SHAC(ABC):
         self._compute_parallelism()
 
         # serialization paths
+        self._base_dir = save_dir
         self._prepare_dirs()
 
     @abstractmethod
@@ -760,10 +766,12 @@ class _SHAC(ABC):
         Creates directorues where the temporary files from joblib and the trained
         classifiers will be saved.
         """
-        self.temp_dir = os.path.join('shac', 'temp')
-        self.clf_dir = os.path.join('shac', 'classifiers')
+        self.temp_dir = os.path.join(self._base_dir, 'temp')
+        self.clf_dir = os.path.join(self._base_dir, 'classifiers')
+
         if not os.path.exists(self.temp_dir):
             os.makedirs(self.temp_dir)
+
         if not os.path.exists(self.clf_dir):
             os.makedirs(self.clf_dir)
 
@@ -862,9 +870,9 @@ class _SHAC(ABC):
         from the default save directories.
         """
         try:
-            self.dataset = data.Dataset.load_from_directory()
+            self.dataset = data.Dataset.load_from_directory(self._base_dir)
         except FileNotFoundError:
-            pass
+            self.dataset = data.Dataset()
 
         try:
             self.classifiers = xgb_utils.restore_classifiers(self.clf_dir)
@@ -874,11 +882,19 @@ class _SHAC(ABC):
         self.parameters = self.dataset.parameters
         self._dataset_index = len(self.dataset)
 
-        if len(self.dataset) > 0:
+        if self.dataset is not None and len(self.dataset) > 0:
             print("\nFound and restored dataset containing %d samples" % (len(self.dataset)))
+        else:
+            print("Could not restore the dataset ! Please check provided base path (%s)" % (
+                self._base_dir
+            ))
 
-        if len(self.classifiers) > 0:
+        if self.classifiers is not None and len(self.classifiers) > 0:
             print("Found and restored %d classifiers" % (len(self.classifiers)))
+        else:
+            print("Could not restore the classifiers ! Please check provided base path (%s)" % (
+                self._base_dir
+            ))
 
         print()
 
@@ -921,10 +937,12 @@ class _SHAC(ABC):
     @num_parallel_generators.setter
     def num_parallel_generators(self, val):
         """
-
+        Check and sets the number of parallel generators. If None, checks if the number
+        of workers exceeds the number of virtual cores. If it does, it warns about it
+        and sets the max parallel generators to be the number of cores.
 
         # Arguments:
-
+            n (int | None): The number of parallel generators required.
         """
         if val is None:
             cpu_count = multiprocessing.cpu_count()
@@ -1073,6 +1091,8 @@ class SHAC(_SHAC):
             the evaluation measure or minimize it.
         max_classifiers (int): Maximum number of classifiers that
             are trained. Default (18) is according to the paper.
+        save_dir (str): The base directory where the data of the engine
+            will be stored.
 
     # References:
         - [Parallel Architecture and Hyperparameter Search via Successive Halving and Classification](https://arxiv.org/abs/1805.10255)
@@ -1082,10 +1102,11 @@ class SHAC(_SHAC):
     """
 
     def __init__(self, hyperparameter_list, total_budget, num_batches,
-                 objective='max', max_classifiers=18):
+                 objective='max', max_classifiers=18, save_dir='shac'):
         super(SHAC, self).__init__(hyperparameter_list, total_budget,
                                    num_batches=num_batches, objective=objective,
-                                   max_classifiers=max_classifiers)
+                                   max_classifiers=max_classifiers,
+                                   save_dir=save_dir)
 
     def _evaluation_handler(self, func, worker_id, parameter_dict, *batch_args):
         """

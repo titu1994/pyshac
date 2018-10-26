@@ -6,7 +6,6 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 import warnings
 
-
 # compatible with both Python 2 and 3
 try:
     FileNotFoundError
@@ -111,7 +110,7 @@ def evaluate_models(encoded_samples, clfs, relax_checks=False):
 
 
 def save_classifiers(clfs, basepath='shac'):
-    if basepath == 'shac':
+    if 'classifiers' not in basepath:
         basepath = os.path.join(basepath, 'classifiers')
 
     if not os.path.exists(basepath):
@@ -123,7 +122,7 @@ def save_classifiers(clfs, basepath='shac'):
 
 
 def restore_classifiers(basepath='shac'):
-    if basepath == 'shac':
+    if 'classifiers' not in basepath:
         basepath = os.path.join(basepath, 'classifiers')
 
     path = os.path.join(basepath, 'classifiers.pkl')

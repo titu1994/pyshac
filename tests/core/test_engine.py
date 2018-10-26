@@ -30,6 +30,10 @@ def optimizer_wrapper(func):
         # remove temporary files
         if os.path.exists('shac/'):
             shutil.rmtree('shac/')
+
+        if os.path.exists('custom/'):
+            shutil.rmtree('custom/')
+
         return output
     return wrapper
 
@@ -307,6 +311,60 @@ def test_shac_simple():
 
     # test no file found, yet no error
     shutil.rmtree('shac/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
+    shac2.restore_data()
+
+
+@optimizer_wrapper
+def test_shac_simple_custom_basepath():
+    total_budget = 50
+    batch_size = 5
+    objective = 'max'
+
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    shac = engine.SHAC(h, total_budget=total_budget,
+                       num_batches=batch_size, objective=objective,
+                       save_dir='custom')
+
+    assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
+    assert shac._per_classifier_budget == 10
+    assert shac.num_workers == 10
+    assert len(shac.classifiers) == 0
+    assert len(shac.dataset) == 0
+
+    # do sequential work for debugging
+    shac.num_parallel_generators = 2
+    shac.num_parallel_evaluators = 2
+
+    print("Evaluating before training")
+    np.random.seed(0)
+
+    # training
+    shac.fit(evaluation_simple)
+
+    assert len(shac.classifiers) <= shac.total_classifiers
+    assert os.path.exists('custom/datasets/dataset.csv')
+    assert os.path.exists('custom/classifiers/classifiers.pkl')
+
+    # Serialization
+    shac.save_data()
+
+    # Restore with different batchsize
+    shac2 = engine.SHAC(None, total_budget=total_budget,
+                        num_batches=10, objective=objective,
+                        save_dir='custom')
+
+    shac2.restore_data()
+
+    # test no file found, yet no error
+    shutil.rmtree('custom/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
     shac2.restore_data()
 
 
@@ -382,6 +440,9 @@ def test_shac_simple_relax_checks():
 
     # test no file found, yet no error
     shutil.rmtree('shac/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
     shac2.restore_data()
 
 
@@ -487,6 +548,61 @@ def test_shac_simple_torch():
 
     # test no file found, yet no error
     shutil.rmtree('shac/')
+
+    shac2.classifiers = None
+    shac2.dataset = None
+    shac2.restore_data()
+
+
+@optimizer_wrapper
+def test_shac_simple_torch_custom_basepath():
+    total_budget = 50
+    batch_size = 5
+    objective = 'max'
+
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params)
+
+    shac = torch_engine.TorchSHAC(h, total_budget=total_budget, max_gpu_evaluators=0,
+                                  num_batches=batch_size, objective=objective, max_cpu_evaluators=1,
+                                  save_dir='custom')
+
+    assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
+    assert shac._per_classifier_budget == 10
+    assert shac.num_workers == 10
+    assert len(shac.classifiers) == 0
+    assert len(shac.dataset) == 0
+
+    # do sequential work for debugging
+    shac.num_parallel_generators = 1
+    shac.num_parallel_evaluators = 1
+
+    shac.generator_backend = 'loky'
+
+    # training
+    shac.fit(evaluation_simple)
+
+    assert len(shac.classifiers) <= shac.total_classifiers
+    assert os.path.exists('custom/datasets/dataset.csv')
+    assert os.path.exists('custom/classifiers/classifiers.pkl')
+
+    # Serialization
+    shac.save_data()
+
+    # Restore with different batchsize
+    shac2 = torch_engine.TorchSHAC(None, total_budget=total_budget, max_gpu_evaluators=1,
+                                   num_batches=10, objective=objective, max_cpu_evaluators=2,
+                                   save_dir='custom')
+
+    assert shac2.limit_memory is True
+
+    shac2.restore_data()
+
+    # test no file found, yet no error
+    shutil.rmtree('custom/')
+
+    shac2.classifiers = None
+    shac2.dataset = None
     shac2.restore_data()
 
 
@@ -593,6 +709,9 @@ def test_shac_fit_dataset():
 
     # test no file found, yet no error
     shutil.rmtree('shac/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
     shac2.restore_data()
 
 
@@ -676,6 +795,9 @@ def test_shac_fit_dataset_presort():
 
     # test no file found, yet no error
     shutil.rmtree('shac/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
     shac2.restore_data()
 
 

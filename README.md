@@ -17,7 +17,7 @@ It contains a User Guide, as well as explanation of the different engines that c
 
 
 |   Topic     |  Link  |
-|:-------------:|:--------:|
+|:-------------|:--------:|
 | Installation | http://titu1994.github.io/pyshac/install/   |
 | User Guide   |   http://titu1994.github.io/pyshac/guide/  |
 | Managed Engines   |   http://titu1994.github.io/pyshac/managed/  |

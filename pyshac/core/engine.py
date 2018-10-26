@@ -665,6 +665,9 @@ class _SHAC(ABC):
                                       "You should consider using `relax_checks` to reduce "
                                       "this constraint or wait it out." % (total_count))
 
+                    # Reset the random seed
+                    np.random.RandomState(np.random.randint(0, 32767, size=5))
+
                     counter = 0
                 else:
                     counter += 1

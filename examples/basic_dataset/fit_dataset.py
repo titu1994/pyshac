@@ -78,4 +78,4 @@ print("Mean squared error of samples : ", np.mean(losses))
 
 # Visualize the dataset
 from pyshac.utils.vis_utils import plot_dataset
-plot_dataset(shac.dataset, eval_label='MSE')
+plot_dataset(shac.dataset, eval_label='MSE', trend_deg=5)

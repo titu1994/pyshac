@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 import pyshac.config.data as data
 plt.style.use('seaborn-paper')
@@ -6,7 +7,7 @@ plt.style.use('seaborn-paper')
 
 def plot_dataset(dataset, to_file='dataset.png',
                  title='Dataset evaluation',
-                 eval_label='Score'):
+                 eval_label='Score', trend_deg=3):
     """
     Plots the training history of the provided dataset.
     Can be provided either the `Dataset` object itself,
@@ -23,6 +24,8 @@ def plot_dataset(dataset, to_file='dataset.png',
             the plot.
         eval_label (str): String label used as the y axis
             label of the plot.
+        trend_degree (int): Degree of the polynomial which
+            fits the dataset to create the trend line.
 
     # Raises:
         FileNotFoundError: If the provided dataset is a string
@@ -57,8 +60,14 @@ def plot_dataset(dataset, to_file='dataset.png',
                          "`restore_dataset` to restore the history of the "
                          "dataset first.")
 
+    scores = scores.astype('float64')
+    x = list(range(scores.shape[0]))
+    z = np.polyfit(x, scores, deg=trend_deg)
+    trend = np.poly1d(z)
+
     fig = plt.figure()
     plt.plot(scores, label='Evaluation score')
+    plt.plot(x, trend(x), label='Evaluation trend')
     plt.legend()
     plt.title(title)
     plt.xlabel('Iteration')

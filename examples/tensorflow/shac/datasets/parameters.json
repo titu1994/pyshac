@@ -46,19 +46,19 @@
     "dropout1": [
         "UniformContinuousHyperParameter",
         {
-            "max_value": 0.8,
             "log_encode": false,
-            "min_value": 0.1,
-            "name": "dropout1"
+            "name": "dropout1",
+            "max_value": 0.8,
+            "min_value": 0.1
         }
     ],
     "dropout2": [
         "UniformContinuousHyperParameter",
         {
-            "max_value": 0.5,
             "log_encode": false,
-            "min_value": 0.1,
-            "name": "dropout2"
+            "name": "dropout2",
+            "max_value": 0.5,
+            "min_value": 0.1
         }
     ],
     "optimizer": [

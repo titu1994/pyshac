@@ -34,7 +34,7 @@ param_y = pyshac.MultiUniformHP('y', -2.0, 2.0, sample_count=500)
 parameters = [param_x, param_y]
 
 # define the total budget as 100 evaluations
-total_budget = 1100  # 200 evaluations at maximum
+total_budget = 1100  # 1100 evaluations at maximum
 
 # define the number of batches
 num_batches = 11  # 10 samples per batch
@@ -53,7 +53,7 @@ shac.fit(squared_error_loss, skip_cv_checks=True, early_stop=False, relax_checks
 shac.restore_data()
 
 # sample more than one batch of hyper parameters
-parameter_samples = shac.predict(10)  # samples 100 hyper parameters
+parameter_samples = shac.predict(10)  # samples 10 hyper parameters
 
 losses = [squared_error_loss(0, params) for params in parameter_samples]
 

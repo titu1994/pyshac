@@ -92,6 +92,9 @@ def test_plot_dataset():
     # Test empty eval label
     vis_utils.plot_dataset(dataset, eval_label=None, to_file=None)
 
+    # Test different degree of kernel
+    vis_utils.plot_dataset(dataset, trend_deg=1, to_file=None)
+
 
 if __name__ == '__main__':
     pytest.main([__file__])

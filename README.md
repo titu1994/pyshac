@@ -202,4 +202,29 @@ An example of how to use the `TensorflowSHAC` engine is provided [in the example
 
 Comparison scripts of basic optimization, `Branin` and `Hartmann6` using Tensorflow Eager 1.8 are provided in the respective folders.
 
+### Evaluation of Branin
+
+Brannin to close to the true optima as described in the paper.
+
+<img src='https://github.com/titu1994/pyshac/blob/master/examples/branin/dataset.png?raw=true' height=100% width=50%>
+
+### Evaluation of Hardmann 6
+
+Hartmann 6 was a much harder dataset, and results are worse than Random Search 2x and the one from the paper. Perhaps it was due to a bad run, and may be fixed with larger budget for training.
+
+<img src='https://github.com/titu1994/pyshac/blob/master/examples/hartmann6/dataset.png?raw=true' height=100% width=50%>
+
+### Evaluation of Simple Optimization Objective
+
+The task is to sample two parameters `x` and `y`, such that `z = 2 * x - y` and we want `z` to approach the value of 4. We utilize MSE 
+as the metric between z and the optimal value.
+
+<img src='https://github.com/titu1994/pyshac/blob/master/examples/basic_opt/dataset.png?raw=true' height=100% width=50%>
+
+### Evaluation of Hyper Parameter Optimization
+
+The task is to sample hyper parameters which provide high accuracy values using TensorflowSHAC engine.
+
+<img src='https://github.com/titu1994/pyshac/blob/master/examples/tensorflow/dataset.png?raw=true' height=100% width=50%>
+
 ----

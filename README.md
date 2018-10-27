@@ -64,6 +64,20 @@ pip install -r "doc_requirements.txt"
 - UniformContinuousHyperParameter
 - NormalContinuousHyperParameter
 
+There are also 3 additional hyper parameters, which are useful when a parameter needs to be sampled multiple times
+for each evaluation :
+
+- [MultiDiscreteHyperParameter](config/hyperparameters.md#multidiscretehyperparameter)
+- [MultiUniformContinuousHyperParameter](config/hyperparameters.md#multiuniformcontinuoushyperparameter)
+- [MultiNormalContinuousHyperParameter](config/hyperparameters.md#multinormalcontinuoushyperparameter)
+
+These multi parameters have an additional argument `sample_count` which can be used to sample multiple times
+per step.
+
+**Note**: The values will be concatenated linearly, so each multi parameter will have a list of values
+returned in the resultant OrderedDict. If you wish to flatten the entire search space, you can
+use `pyshac.flatten_parameters` on this OrderedDict.
+
 ```python
 import pyshac
 

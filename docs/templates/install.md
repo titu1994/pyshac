@@ -28,7 +28,7 @@ Once the XGBoost package is installed and verifier, we can simply clone this rep
 ```
 git clone https://github.com/titu1994/pyshac.git
 cd pyshac
-python setup.py install
+pip install .
 ```
 
 ## Installation of External Libraries

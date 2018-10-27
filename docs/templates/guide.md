@@ -44,6 +44,21 @@ There are 3 available hyper parameters made available :
 - [UniformContinuousHyperParameter](config/hyperparameters.md#uniformcontinuoushyperparameter)
 - [NormalContinuousHyperParameter](config/hyperparameters.md#normalcontinuoushyperparameter)
 
+There are also 3 additional hyper parameters, which are useful when a parameter needs to be sampled multiple times
+for each evaluation :
+
+- [MultiDiscreteHyperParameter](config/hyperparameters.md#multidiscretehyperparameter)
+- [MultiUniformContinuousHyperParameter](config/hyperparameters.md#multiuniformcontinuoushyperparameter)
+- [MultiNormalContinuousHyperParameter](config/hyperparameters.md#multinormalcontinuoushyperparameter)
+
+These multi parameters have an additional argument `sample_count` which can be used to sample multiple times
+per step.
+
+!!!info "Note"
+    The values will be concatenated linearly, so each multi parameter will have a list of values
+    returned in the resultant OrderedDict. If you wish to flatten the entire search space, you can
+    use `pyshac.flatten_parameters` on this OrderedDict.
+
 While these can declare most of the common hyper parameters, if there is a need for custom hyper parameters, then they
 can very easily be added as shown in [Custom Hyper Parameters](custom-hyper-parameters.md).
 

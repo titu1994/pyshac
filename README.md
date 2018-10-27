@@ -67,9 +67,9 @@ pip install -r "doc_requirements.txt"
 There are also 3 additional hyper parameters, which are useful when a parameter needs to be sampled multiple times
 for each evaluation :
 
-- [MultiDiscreteHyperParameter](config/hyperparameters.md#multidiscretehyperparameter)
-- [MultiUniformContinuousHyperParameter](config/hyperparameters.md#multiuniformcontinuoushyperparameter)
-- [MultiNormalContinuousHyperParameter](config/hyperparameters.md#multinormalcontinuoushyperparameter)
+- MultiDiscreteHyperParameter
+- MultiUniformContinuousHyperParameter
+- MultiNormalContinuousHyperParameter
 
 These multi parameters have an additional argument `sample_count` which can be used to sample multiple times
 per step.

@@ -41,9 +41,13 @@ PAGES = [
         'classes': [
             (hp.AbstractHyperParameter, '*'),
             (hp.AbstractContinuousHyperParameter, '*'),
+            (hp.AbstractMultiContinuousHyperParameter, '*'),
             (pyshac.DiscreteHyperParameter, '*'),
             (pyshac.UniformContinuousHyperParameter, '*'),
             (pyshac.NormalContinuousHyperParameter, '*'),
+            (pyshac.MultiDiscreteHyperParameter, '*'),
+            (pyshac.MultiUniformContinuousHyperParameter, '*'),
+            (pyshac.MultiDiscreteHyperParameter, '*'),
             (pyshac.HyperParameterList, [
                 pyshac.HyperParameterList.add_hyper_parameter,
                 pyshac.HyperParameterList.remove_hyper_parameter,
@@ -65,6 +69,9 @@ PAGES = [
         'classes': [
             (data.Dataset, '*'),
         ],
+        'functions': [
+            data.flatten_parameters,
+        ]
     },
     {
         'page': 'config/callbacks.md',

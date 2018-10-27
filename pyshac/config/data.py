@@ -14,6 +14,29 @@ except NameError:
     FileNotFoundError = IOError
 
 
+def flatten_parameters(params):
+    """
+    Takes an OrderedDict or a list of lists, and flattens it into a
+    list containing the items.
+
+    # Arguments:
+        params (OrderedDict | list of lists): The parameters that were
+            provided by the engine, either as an OrderedDict or a list
+            of list representation.
+
+    # Returns:
+        a flattened python list containing just the sampled values.
+    """
+    if isinstance(params, OrderedDict):
+        params = list(params.values())
+
+    params = [item
+              for sublist in params
+              for item in sublist]
+
+    return params
+
+
 class Dataset(object):
     """Dataset manager for the engines.
 
@@ -250,8 +273,19 @@ class Dataset(object):
         """
         param = OrderedDict()
 
-        for name, value in zip(self._parameters.name_map.values(), sample):
-            param[name] = value
+        index = 0
+        for p in self._parameters.id2param.values():
+            if hasattr(p, 'sample_count'):
+                param[p.name] = sample[index: index + p.sample_count]
+
+                index += p.sample_count
+            else:
+                param[p.name] = sample[index]
+
+                index += 1
+
+        # for name, value in zip(self._parameters.name_map.values(), sample):
+        #     param[name] = value
 
         return param
 

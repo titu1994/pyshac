@@ -63,6 +63,14 @@ def get_hyperparameter_list():
     return [h1, h2, h3, h4]
 
 
+def get_multi_parameter_list():
+    h1 = hp.MultiDiscreteHyperParameter('h1', [0, 1, 2], sample_count=2)
+    h2 = hp.MultiDiscreteHyperParameter('h2', [3, 4, 5, 6], sample_count=3)
+    h3 = hp.MultiUniformContinuousHyperParameter('h3', 7, 10, sample_count=5)
+    h4 = hp.MultiDiscreteHyperParameter('h4', ['v1', 'v2'], sample_count=4)
+    return [h1, h2, h3, h4]
+
+
 def get_hartmann6_hyperparameter_list():
     h = [hp.UniformContinuousHyperParameter('h%d' % i, 0.0, 1.0) for i in range(6)]
     return h
@@ -78,6 +86,13 @@ def evaluation_simple(worker_id, params):
     values = list(params.values())[:3]
     metric = np.sum(values)
     print('objective value =', metric)
+    return metric
+
+
+def evaluation_simple_multi(worker_id, params):
+    values = data.flatten_parameters(params)[:10]
+    metric = np.sum(values)
+    print('objective value (multi params) =', metric)
     return metric
 
 
@@ -362,6 +377,87 @@ def test_shac_simple_custom_basepath():
 
     # test no file found, yet no error
     shutil.rmtree('custom/')
+
+    shac2.dataset = None
+    shac2.classifiers = None
+    shac2.restore_data()
+
+
+@optimizer_wrapper
+def test_shac_simple_multiparameter():
+    total_budget = 50
+    batch_size = 5
+    objective = 'max'
+
+    params = get_multi_parameter_list()
+    h = hp.HyperParameterList(params)
+
+    shac = engine.SHAC(h, total_budget=total_budget,
+                       num_batches=batch_size, objective=objective)
+
+    assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
+    assert shac._per_classifier_budget == 10
+    assert shac.num_workers == 10
+    assert len(shac.classifiers) == 0
+    assert len(shac.dataset) == 0
+
+    # do sequential work for debugging
+    shac.num_parallel_generators = 2
+    shac.num_parallel_evaluators = 2
+
+    print("Evaluating before training")
+    np.random.seed(0)
+
+    random_samples = shac.predict(num_batches=10, num_workers_per_batch=1)  # random sample predictions
+    random_eval = [evaluation_simple_multi(0, sample) for sample in random_samples]
+    random_mean = np.mean(random_eval)
+
+    print()
+
+    # training
+    shac.fit(evaluation_simple_multi)
+
+    assert len(shac.classifiers) <= shac.total_classifiers
+    assert os.path.exists('shac/datasets/dataset.csv')
+    assert os.path.exists('shac/classifiers/classifiers.pkl')
+
+    print()
+    print("Evaluating after training")
+    np.random.seed(0)
+    predictions = shac.predict(num_batches=10, num_workers_per_batch=1)
+
+    print("Shac preds", predictions)
+    pred_evals = [evaluation_simple_multi(0, pred) for pred in predictions]
+    pred_mean = np.mean(pred_evals)
+
+    print()
+    print("Random mean : ", random_mean)
+    print("Predicted mean : ", pred_mean)
+
+    assert random_mean < pred_mean
+
+    # Serialization
+    shac.save_data()
+
+    # Restore with different batchsize
+    shac2 = engine.SHAC(None, total_budget=total_budget,
+                        num_batches=10, objective=objective)
+
+    shac2.restore_data()
+
+    np.random.seed(0)
+    predictions = shac.predict(num_batches=10, num_workers_per_batch=1)
+    pred_evals = [evaluation_simple_multi(0, pred) for pred in predictions]
+    pred_mean = np.mean(pred_evals)
+
+    print()
+    print("Random mean : ", random_mean)
+    print("Predicted mean : ", pred_mean)
+
+    assert random_mean < pred_mean
+
+    # test no file found, yet no error
+    shutil.rmtree('shac/')
 
     shac2.dataset = None
     shac2.classifiers = None

@@ -1,0 +1,22 @@
+{
+    "x": [
+        "MultiUniformContinuousHyperParameter",
+        {
+            "sample_count": 100,
+            "name": "x",
+            "log_encode": false,
+            "max_value": 5.0,
+            "min_value": -5.0
+        }
+    ],
+    "y": [
+        "MultiUniformContinuousHyperParameter",
+        {
+            "sample_count": 500,
+            "name": "y",
+            "log_encode": false,
+            "max_value": 2.0,
+            "min_value": -2.0
+        }
+    ]
+}

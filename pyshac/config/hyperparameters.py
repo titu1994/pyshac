@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
+from collections import Iterable
+import six
 import sys
 import inspect
 import numpy as np
@@ -240,6 +242,109 @@ class DiscreteHyperParameter(AbstractHyperParameter):
         return dict(list(base_config.items()) + list(config.items()))
 
 
+class MultiDiscreteHyperParameter(AbstractHyperParameter):
+    """
+    Discrete Hyper Parameter that defines a set of discrete values that it can take,
+    and acts upon a list of samples.
+
+    # Arguments:
+        name (str): Name of the hyper parameter.
+        values (list): A list of values (must all be pickle-able and hashable)
+            values or None.
+        sample_count (int): Number of samples that are required from this
+            hyper parameter.
+
+    # Raises:
+        ValueError: If the values provided is `None` or length of values is 0.
+
+    # Raises:
+        ValueError: If the `name` is not specified or if `sample_count` is less
+            than 1.
+    """
+    def __init__(self, name, values, sample_count=1):
+
+        super(MultiDiscreteHyperParameter, self).__init__(name, values)
+
+        if sample_count < 1:
+            raise ValueError("`sample_count` must be greater than 0.")
+
+        self.sample_count = sample_count
+        if values is not None and len(values) != 0:
+            super(MultiDiscreteHyperParameter, self)._build_maps(values)
+        else:
+            raise ValueError("MultiDiscreteHyperParamter must be passed at "
+                             "least one or more values.")
+
+    def sample(self):
+        """
+        Samples a number of values from its set of discrete values.
+
+        # Returns:
+            a list of values from its set of possible values.
+        """
+        choices = np.random.randint(0, self.num_choices, size=self.sample_count,
+                                    dtype=np.int64)
+
+        param = [self.id2param[choice] for choice in choices]
+        return param
+
+    def encode(self, x):
+        """
+        Encodes a list of values into a list of the corresponding integer index.
+
+        # Arguments:
+            x (int | float | str): A list of values sampled from its
+                possible values.
+
+        # Returns:
+             list of int values representing their encoded index.
+        """
+        e = [self.param2id[self._cast(v)] for v in x]
+        return e
+
+    def decode(self, x):
+        """
+        Decodes a list of encoded integers into their original value.
+
+        # Args:
+            x (int): a list of integer encoded values.
+
+        # Returns:
+             list of (int | float | str) representing the actual decoded
+                values.
+        """
+        params = [self._cast(self.id2param[v]) for v in x]
+        return params
+
+    def _cast(self, x):
+        """
+        Casts the sample to its original data type.
+
+        # Arguments:
+            x (int | float | str): Input sample that will be cast to the
+                correct data type.
+
+        # Returns:
+            the sample cast to the correct data type.
+        """
+        return self.param2type[x](x)
+
+    def get_config(self):
+        """
+        Creates the config of the class with all of its values.
+
+        # Returns:
+            a dictionary with the config of the class.
+        """
+        config = {
+            'values': list(self.id2param.values()),
+            'sample_count': self.sample_count,
+        }
+
+        base_config = super(MultiDiscreteHyperParameter, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+
 class AbstractContinuousHyperParameter(AbstractHyperParameter):
     """
     An abstract hyper parameter that represents a parameter that can take a range
@@ -327,7 +432,10 @@ class AbstractContinuousHyperParameter(AbstractHyperParameter):
         # Returns:
             the sample cast to the correct data type.
         """
-        return float(x)
+        if isinstance(x, np.ndarray) or hasattr(x, 'dtype'):
+            return x.astype(np.float64)
+        else:
+            return float(x)
 
     def get_config(self):
         """
@@ -338,6 +446,124 @@ class AbstractContinuousHyperParameter(AbstractHyperParameter):
         """
         base_config = super(AbstractContinuousHyperParameter, self).get_config()
         return base_config
+
+    def __repr__(self):
+        s = "%s : continuous [%0.3f, %0.3f)\n" % (self.name, self._val1, self._val2)
+        return s
+
+
+class AbstractMultiContinuousHyperParameter(AbstractHyperParameter):
+    """
+    An abstract hyper parameter that represents a parameter that can take a range
+    of values from a certain distribution, sampled multiple times.
+
+    # Arguments:
+        name (str): Name of the parameter.
+        val1 (float): A symbolic value that is used by subclasses.
+        val2 (float): A symbolic value that is used by subclasses.
+        log_encode (bool): Determines whether the encoding must be in natural
+            log-space or not.
+        sample_count (int): Number of samples that are required from this
+            hyper parameter.
+
+    # Raises:
+        NotImplementedError: If `sample()` is called.
+        ValueErroe: If sample count is less than 1.
+    """
+    def __init__(self, name, val1, val2, log_encode=False, sample_count=1):
+        super(AbstractMultiContinuousHyperParameter, self).__init__(name, None)
+
+        if sample_count < 1:
+            raise ValueError("`sample_count` must be greater than 0.")
+
+        if val1 is not None and val2 is not None:
+            self._val1 = float(val1)
+            self._val2 = float(val2)
+        else:
+            raise ValueError("val1 and val2 must be floating point "
+                             "numbers for ContinuousHyperParameters")
+
+        self.log_encode = log_encode
+        self.sample_count = sample_count
+
+        if log_encode:
+            if val1 < 0.0 or val2 < 0.0:
+                raise ValueError("When using log encoding, negative values are not allowed for parameters")
+
+    def sample(self):
+        """
+        Abstract method that must be redefined by base classes.
+
+        # Returns:
+            a float value.
+        """
+        raise NotImplementedError("Subclass must implement this method !")
+
+    def encode(self, x):
+        """
+        Encodes a list of floating point values into log space if `log_space`
+        was set in the constructor, else returns its original value.
+
+        # Arguments:
+            x (float): a list of samples.
+
+        # Returns:
+             list of floats.
+        """
+        if self.log_encode:
+            x = [self._cast(np.log(v)) for v in x]
+        else:
+            x = [self._cast(v) for v in x]
+
+        return x
+
+    def decode(self, x):
+        """
+        Decodes a list of floating point values into normal space if `log_space`
+        was set in the constructor, else returns its original value.
+
+        # Arguments:
+            x (float): a list of encoded samples.
+
+        # Returns:
+             list of floats.
+        """
+        if self.log_encode:
+            x = [self._cast(np.exp(v)) for v in x]
+        else:
+            x = [self._cast(v) for v in x]
+
+        return x
+
+    def _cast(self, x):
+        """
+        Casts the sample to its original data type.
+
+        # Arguments:
+            x (int | float): Input sample that will be cast to the
+                correct data type.
+
+        # Returns:
+            the sample cast to the correct data type.
+        """
+        if isinstance(x, np.ndarray) or hasattr(x, 'dtype'):
+            return x.astype(np.float64)
+        else:
+            return float(x)
+
+    def get_config(self):
+        """
+        Creates the config of the class with all of its values.
+
+        # Returns:
+            a dictionary with the config of the class.
+        """
+        config = {
+            'sample_count': self.sample_count,
+        }
+
+        base_config = super(AbstractMultiContinuousHyperParameter, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
 
     def __repr__(self):
         s = "%s : continuous [%0.3f, %0.3f)\n" % (self.name, self._val1, self._val2)
@@ -397,6 +623,65 @@ class UniformContinuousHyperParameter(AbstractContinuousHyperParameter):
         return self._val2
 
 
+class MultiUniformContinuousHyperParameter(AbstractMultiContinuousHyperParameter):
+    """
+    A hyper parameter that represents a parameter that can take a range
+    of values from a uniform distribution, sampled multiple times.
+
+    # Arguments:
+        name (str): Name of the parameter.
+        min_value (float): The minimum value (inclusive) that the uniform
+            distribution can take.
+        max_value (float): The maximum value (exclusive) that the uniform
+            distribution can take.
+        log_encode (bool): Determines whether the encoding must be in natural
+            log-space or not.
+        sample_count (int): Number of samples that are required from this
+            hyper parameter.
+
+    # Raises:
+        ValueErroe: If sample count is less than 1.
+    """
+    def __init__(self, name, min_value, max_value, log_encode=False, sample_count=1):
+
+        super(MultiUniformContinuousHyperParameter, self).__init__(name, min_value, max_value,
+                                                                   log_encode, sample_count)
+
+    def sample(self):
+        """
+        Samples uniformly from the range [min_value, max_value).
+
+        # Returns:
+            list of floats.
+        """
+        value = np.random.uniform(self._val1, self._val2, size=self.sample_count).tolist()
+        return value
+
+    def get_config(self):
+        """
+        Creates the config of the class with all of its values.
+
+        # Returns:
+            a dictionary with the config of the class.
+        """
+        config = {
+            'min_value': self.min_value,
+            'max_value': self.max_value,
+            'log_encode': self.log_encode,
+        }
+
+        base_config = super(MultiUniformContinuousHyperParameter, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+    @property
+    def min_value(self):
+        return self._val1
+
+    @property
+    def max_value(self):
+        return self._val2
+
+
 class NormalContinuousHyperParameter(AbstractContinuousHyperParameter):
     """
     A hyper parameter that represents a parameter that can take a range
@@ -445,6 +730,60 @@ class NormalContinuousHyperParameter(AbstractContinuousHyperParameter):
         return self._val2
 
 
+class MultiNormalContinuousHyperParameter(AbstractMultiContinuousHyperParameter):
+    """
+    A hyper parameter that represents a parameter that can take a range
+    of values from a normal distribution, sampled multiple times.
+
+    # Arguments:
+        name (str): Name of the parameter.
+        mean (float): The mean of the normal distribution.
+        std (float): The standard deviation of the normal distribution.
+        sample_count (int): Number of samples that are required from this
+            hyper parameter.
+
+    # Raises:
+        ValueErroe: If sample count is less than 1.
+    """
+    def __init__(self, name, mean, std, sample_count=1):
+        super(MultiNormalContinuousHyperParameter, self).__init__(name, mean, std,
+                                                                  False, sample_count)
+
+    def sample(self):
+        """
+        Samples from the normal distribution with a mean and standard deviation
+        as specified in the constructor.
+
+        # Returns:
+            list of float.
+        """
+        value = np.random.normal(self._val1, self._val2, size=self.sample_count).tolist()
+        return value
+
+    def get_config(self):
+        """
+        Creates the config of the class with all of its values.
+
+        # Returns:
+            a dictionary with the config of the class.
+        """
+        config = {
+            'mean': self.mean,
+            'std': self.std,
+        }
+
+        base_config = super(MultiNormalContinuousHyperParameter, self).get_config()
+        return dict(list(base_config.items()) + list(config.items()))
+
+    @property
+    def mean(self):
+        return self._val1
+
+    @property
+    def std(self):
+        return self._val2
+
+
 class HyperParameterList(AbstractHyperParameter):
     """
     A composite hyper parameter, that encloses a list of hyper parameters
@@ -471,7 +810,12 @@ class HyperParameterList(AbstractHyperParameter):
         values = []
         for v in self.id2param.values():  # type: AbstractHyperParameter
             x = v.sample()
-            values.append(x)
+
+            if isinstance(x, Iterable) and not isinstance(x, six.string_types):
+                values.extend(x)
+            else:
+                values.append(x)
+
         return values
 
     def encode(self, x):
@@ -496,9 +840,19 @@ class HyperParameterList(AbstractHyperParameter):
                 x = x.tolist()
 
         values = []
-        for data, param in zip(x, self.id2param.values()):  # type: (AbstractHyperParameter)
-            v = param.encode(data)
-            values.append(v)
+        index = 0
+
+        for param in self.id2param.values():
+            if hasattr(param, 'sample_count'):
+                v = param.encode(x[index: index + param.sample_count])
+                values.extend(v)
+
+                index += param.sample_count
+            else:
+                v = param.encode(x[index])
+                values.append(v)
+
+                index += 1
 
         values = np.array(values)
         return values
@@ -522,10 +876,19 @@ class HyperParameterList(AbstractHyperParameter):
                 x = x.tolist()
 
         values = []
-        for data, param in zip(x, self.id2param.values()):  # type: (AbstractHyperParameter)
-            v = param.decode(data)
-            v = param._cast(v)
-            values.append(v)
+        index = 0
+
+        for param in self.id2param.values():
+            if hasattr(param, 'sample_count'):
+                v = param.decode(x[index: index + param.sample_count])
+                values.extend(v)
+
+                index += param.sample_count
+            else:
+                v = param._cast(param.decode(x[index]))
+                values.append(v)
+
+                index += 1
 
         return values
 
@@ -559,9 +922,21 @@ class HyperParameterList(AbstractHyperParameter):
                 x = x.tolist()
 
         types = []
-        for data, param in zip(x, self.id2param.values()):  # type: (AbstractHyperParameter)
-            v = param._cast(data)
-            types.append(v)
+        index = 0
+
+        for param in self.id2param.values():
+            if hasattr(param, 'sample_count'):
+                for i in range(param.sample_count):
+                    id = index + i
+                    v = param._cast(x[id])
+                    types.append(v)
+
+                index += param.sample_count
+            else:
+                v = param._cast(x[index])
+                types.append(v)
+
+                index += 1
 
         return types
 
@@ -659,8 +1034,14 @@ class HyperParameterList(AbstractHyperParameter):
             a list(str) with the names of the parameters.
         """
         name_list = []
+
         for v in self.id2param.values():  # type: AbstractHyperParameter
-            name_list.append(v.name)
+            if hasattr(v, 'sample_count'):
+                for i in range(v.sample_count):
+                    name_list.append(v.name + "_%d" % (i + 1))
+            else:
+                name_list.append(v.name)
+
         return name_list
 
     def __repr__(self):
@@ -719,3 +1100,7 @@ def get_parameter(name):
 DiscreteHP = DiscreteHyperParameter
 UniformHP = UniformContinuousHyperParameter
 NormalHP = NormalContinuousHyperParameter
+
+MultiDiscreteHP = MultiDiscreteHyperParameter
+MultiUniformHP = MultiUniformContinuousHyperParameter
+MultiNormlHP = MultiNormalContinuousHyperParameter

@@ -4,8 +4,8 @@
 [![codecov](https://codecov.io/gh/titu1994/pyshac/branch/master/graph/badge.svg)](https://codecov.io/gh/titu1994/pyshac)
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/titu1994/pyshac/blob/master/LICENSE)
 [![Downloads](https://pepy.tech/badge/pyshac)](https://pypi.org/project/pyshac/)
-[![PyPI](https://img.shields.io/pypi/v/pyshac.svg)](https://pypi.org/search/?q=pyshac)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyshac.svg)](https://pypi.org/search/?q=pyshac)
+[![PyPI](https://img.shields.io/pypi/v/pyshac.svg)](https://pypi.org/project/pyshac/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyshac.svg)](https://pypi.org/project/pyshac/)
 ----
 
 PySHAC is a python library to use the Sequential Halving and Classification algorithm from the paper

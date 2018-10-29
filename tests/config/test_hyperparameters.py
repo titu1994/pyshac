@@ -86,16 +86,27 @@ def test_discrete_encode_decode():
     decoded = h1.decode(encoded)
     assert decoded == values[encoded]
 
+    # Test for None input
+    values = [None, 1, 2, 3]
+    h2 = hp.DiscreteHyperParameter('h1', values)
+    sample = None
+
+    encoded = h2.encode(sample)
+    assert encoded == 0
+
+    decoded = h2.decode(encoded)
+    assert decoded == values[encoded]
+
 
 def test_discrete_serialization_deserialization():
-    h1 = hp.DiscreteHyperParameter('h1', [0, 1])
+    h1 = hp.DiscreteHyperParameter('h1', [0, 1, None])
 
     config = h1.get_config()
     assert 'name' in config
     assert 'values' in config
 
     values = config['values']
-    assert len(values) == 2
+    assert len(values) == 3
 
     h2 = hp.DiscreteHyperParameter.load_from_config(config)
     config = h2.get_config()
@@ -104,7 +115,7 @@ def test_discrete_serialization_deserialization():
     assert 'values' in config
 
     values = config['values']
-    assert len(values) == 2
+    assert len(values) == 3
 
 
 def test_multi_discrete():
@@ -156,9 +167,21 @@ def test_multi_discrete_encode_decode():
     for i in range(len(decoded)):
         assert decoded[i] == values[encoded[i]]
 
+    # Test for None input
+    values = [None, 1, 2, 3]
+    h2 = hp.MultiDiscreteHyperParameter('h1', values, sample_count=10)
+    sample = h2.sample()
+
+    encoded = h2.encode(sample)
+    assert encoded == [3, 1, 3, 1, 2, 0, 3, 2, 0, 0]
+
+    decoded = h2.decode(encoded)
+    for i in range(len(decoded)):
+        assert decoded[i] == values[encoded[i]]
+
 
 def test_multi_discrete_serialization_deserialization():
-    h1 = hp.MultiDiscreteHyperParameter('h1', [0, 1], sample_count=5)
+    h1 = hp.MultiDiscreteHyperParameter('h1', [0, 1, None], sample_count=5)
 
     config = h1.get_config()
     assert 'name' in config
@@ -166,7 +189,7 @@ def test_multi_discrete_serialization_deserialization():
     assert 'sample_count' in config
 
     values = config['values']
-    assert len(values) == 2
+    assert len(values) == 3
     assert config['sample_count'] == 5
 
     h2 = hp.MultiDiscreteHyperParameter.load_from_config(config)
@@ -177,7 +200,7 @@ def test_multi_discrete_serialization_deserialization():
     assert 'sample_count' in config
 
     values = config['values']
-    assert len(values) == 2
+    assert len(values) == 3
     assert config['sample_count'] == 5
 
 

@@ -230,6 +230,13 @@ def test_shac_initialization():
     with pytest.raises(ValueError):
         shac.evaluator_backend = 'random'
 
+    shac = engine.SHAC(None, total_budget=total_budget,
+                       num_batches=batch_size, objective=objective)
+
+    # No parameters
+    with pytest.raises(RuntimeError):
+        shac.predict()
+
 
 @optimizer_wrapper
 def test_shac_simple():

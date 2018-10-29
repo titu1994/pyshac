@@ -532,10 +532,17 @@ class _SHAC(ABC):
         # Raises:
             ValueError: If `max_classifiers` is larger than the number of available
                 classifiers.
+            RuntimeError: If `classifiers` are not available, either due to not being
+                trained or not being loaded into the engine.
 
         # Returns:
             batches of samples in the form of an OrderedDict
         """
+        if self.parameters is None:
+            raise RuntimeError("Unable to find any parameters. Please make sure "
+                               "to set the parameters for the engine first, or "
+                               "load them into the engine prior to calling `predict`")
+
         if max_classfiers is not None and max_classfiers > len(self.classifiers):
             raise ValueError("Maximum number of classifiers (%d) must be less than the number of "
                              "classifiers (%d)" % (max_classfiers, len(self.classifiers)))

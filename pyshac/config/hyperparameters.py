@@ -15,6 +15,18 @@ ABC = ABCMeta('ABC', (object,), {'__slots__': ()})
 _CUSTOM_PARAMETERS = OrderedDict()
 
 
+class _NoneTypeWrapper(object):
+    """
+    A wrapper to handle cases when `None` is passed as a possible parameter
+    value to the engine.
+    """
+    def __init__(self):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return args[0]
+
+
 class AbstractHyperParameter(ABC):
     """
     Abstract Hyper Parameter that defines the methods that all hyperparameters
@@ -143,8 +155,12 @@ class AbstractHyperParameter(ABC):
                 self.id2param[i] = v
 
                 # prepare a type map from string to its type, for fast checks
-                self.param2type[v] = type(v)
-                self.param2type[str(v)] = type(v)
+                if v is not None:
+                    self.param2type[v] = type(v)
+                    self.param2type[str(v)] = type(v)
+                else:
+                    self.param2type[v] = _NoneTypeWrapper()
+                    self.param2type[str(v)] = _NoneTypeWrapper()
 
     def __repr__(self):
         s = self.name + " : "

@@ -317,6 +317,8 @@ def test_shac_simple():
     shac = engine.KerasSHAC(h, total_budget=total_budget, max_gpu_evaluators=1,
                             num_batches=batch_size, objective=objective)
 
+    shac.set_seed(0)
+
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
     assert shac._per_classifier_budget == 20
     assert shac.num_workers == 20
@@ -364,9 +366,10 @@ def test_shac_simple():
                              num_batches=10, objective=objective)
 
     shac2.restore_data()
+    shac2.set_seed(0)
 
     np.random.seed(0)
-    predictions = shac.predict(num_batches=10, num_workers_per_batch=1)
+    predictions = shac2.predict(num_batches=10, num_workers_per_batch=1)
     pred_evals = [evaluation_simple(0, pred) for pred in predictions]
     pred_mean = np.mean(pred_evals)
 
@@ -442,6 +445,8 @@ def test_shac_simple_early_stop():
 
     shac = engine.KerasSHAC(h, total_budget=total_budget, max_gpu_evaluators=0,
                             num_batches=batch_size, objective=objective)
+
+    shac.set_seed(0)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
     assert shac._per_classifier_budget == 5

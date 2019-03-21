@@ -66,6 +66,8 @@ class TensorflowSHAC(optimizer._SHAC):
             self.num_parallel_evaluators = max_gpu_evaluators
             self.limit_memory = True
 
+        self._seed = None
+
     def _evaluation_handler(self, func, worker_id, parameter_dict, *batch_args):
         """
         A wrapper over the evaluation function of the user, so as to manage the
@@ -89,6 +91,9 @@ class TensorflowSHAC(optimizer._SHAC):
              float representing the evaluated value.
         """
         import tensorflow as tf
+
+        if self._seed is not None:
+            tf.set_random_seed(self._seed)
 
         config = tf.ConfigProto(allow_soft_placement=True)
         config.gpu_options.allow_growth = True
@@ -168,3 +173,14 @@ class TensorflowSHAC(optimizer._SHAC):
         return super(TensorflowSHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks,
                                                early_stop=early_stop, relax_checks=relax_checks,
                                                callbacks=callbacks)
+
+    def set_seed(self, seed):
+        """
+        Sets the seed of the parameters and the engine.
+
+        # Arguments:
+            seed (int | None): Seed value of the random state.
+        """
+        super(TensorflowSHAC, self).set_seed(seed)
+
+        self._seed = seed

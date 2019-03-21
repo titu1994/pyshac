@@ -62,6 +62,8 @@ class TorchSHAC(optimizer._SHAC):
             self.num_parallel_evaluators = max_gpu_evaluators
             self.limit_memory = True
 
+        self._seed = None
+
     def _evaluation_handler(self, func, worker_id, parameter_dict, *batch_args):
         """
         Basic implementation of the abstract handler. Performs no additional actions,
@@ -84,6 +86,16 @@ class TorchSHAC(optimizer._SHAC):
         # Returns:
              float representing the evaluated value.
         """
+        if self._seed is not None:
+            np.random.seed(self._seed)
+
+            try:
+                import torch
+                torch.manual_seed(self._seed)
+                torch.cuda.manual_seed_all(self._seed)
+            except ImportError:
+                pass
+
         output = func(worker_id, parameter_dict)
         output = float(output)
         return output
@@ -143,3 +155,14 @@ class TorchSHAC(optimizer._SHAC):
         return super(TorchSHAC, self).fit(eval_fn, skip_cv_checks=skip_cv_checks,
                                           early_stop=early_stop, relax_checks=relax_checks,
                                           callbacks=callbacks)
+
+    def set_seed(self, seed):
+        """
+        Sets the seed of the parameters and the engine.
+
+        # Arguments:
+            seed (int | None): Seed value of the random state.
+        """
+        super(TorchSHAC, self).set_seed(seed)
+
+        self._seed = seed

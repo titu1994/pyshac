@@ -40,7 +40,7 @@ class AbstractHyperParameter(ABC):
     # Raises:
         ValueError: If the `name` is not specified.
     """
-    def __init__(self, name, values):
+    def __init__(self, name, values, seed):
 
         if name is None:
             raise ValueError("`name` of the hyperparameter cannot be `None`")
@@ -50,6 +50,7 @@ class AbstractHyperParameter(ABC):
         self.param2id = OrderedDict()
         self.id2param = OrderedDict()
         self.param2type = OrderedDict()
+        self.set_seed(seed)
 
     @abstractmethod
     def sample(self):
@@ -122,6 +123,7 @@ class AbstractHyperParameter(ABC):
         """
         config = {
             'name': self.name,
+            'seed': self.seed,
         }
         return config
 
@@ -162,6 +164,16 @@ class AbstractHyperParameter(ABC):
                     self.param2type[v] = _NoneTypeWrapper()
                     self.param2type[str(v)] = _NoneTypeWrapper()
 
+    def set_seed(self, seed):
+        """
+        Sets the random seed of the local RNG.
+
+        # Arguments:
+            seed (int | None): Random seed value.
+        """
+        self.seed = seed
+        self.random = np.random.RandomState(seed)
+
     def __repr__(self):
         s = self.name + " : "
         vals = list(self.param2id.keys())
@@ -183,9 +195,9 @@ class DiscreteHyperParameter(AbstractHyperParameter):
     # Raises:
         ValueError: If the `name` is not specified.
     """
-    def __init__(self, name, values):
+    def __init__(self, name, values, seed=None):
 
-        super(DiscreteHyperParameter, self).__init__(name, values)
+        super(DiscreteHyperParameter, self).__init__(name, values, seed)
 
         if values is not None and len(values) != 0:
             super(DiscreteHyperParameter, self)._build_maps(values)
@@ -200,7 +212,7 @@ class DiscreteHyperParameter(AbstractHyperParameter):
         # Returns:
             a single value from its list of possible values.
         """
-        choice = np.random.randint(0, self.num_choices, size=1, dtype=np.int64)[0]
+        choice = self.random.randint(0, self.num_choices, size=1, dtype=np.int64)[0]
         param = self.id2param[choice]
         return param
 
@@ -277,9 +289,9 @@ class MultiDiscreteHyperParameter(AbstractHyperParameter):
         ValueError: If the `name` is not specified or if `sample_count` is less
             than 1.
     """
-    def __init__(self, name, values, sample_count=1):
+    def __init__(self, name, values, sample_count=1, seed=None):
 
-        super(MultiDiscreteHyperParameter, self).__init__(name, values)
+        super(MultiDiscreteHyperParameter, self).__init__(name, values, seed)
 
         if sample_count < 1:
             raise ValueError("`sample_count` must be greater than 0.")
@@ -298,8 +310,8 @@ class MultiDiscreteHyperParameter(AbstractHyperParameter):
         # Returns:
             a list of values from its set of possible values.
         """
-        choices = np.random.randint(0, self.num_choices, size=self.sample_count,
-                                    dtype=np.int64)
+        choices = self.random.randint(0, self.num_choices, size=self.sample_count,
+                                      dtype=np.int64)
 
         param = [self.id2param[choice] for choice in choices]
         return param
@@ -376,8 +388,8 @@ class AbstractContinuousHyperParameter(AbstractHyperParameter):
     # Raises:
         NotImplementedError: If `sample()` is called.
     """
-    def __init__(self, name, val1, val2, log_encode=False):
-        super(AbstractContinuousHyperParameter, self).__init__(name, None)
+    def __init__(self, name, val1, val2, log_encode=False, seed=None):
+        super(AbstractContinuousHyperParameter, self).__init__(name, None, seed)
 
         if val1 is not None and val2 is not None:
             self._val1 = float(val1)
@@ -486,8 +498,8 @@ class AbstractMultiContinuousHyperParameter(AbstractHyperParameter):
         NotImplementedError: If `sample()` is called.
         ValueErroe: If sample count is less than 1.
     """
-    def __init__(self, name, val1, val2, log_encode=False, sample_count=1):
-        super(AbstractMultiContinuousHyperParameter, self).__init__(name, None)
+    def __init__(self, name, val1, val2, log_encode=False, sample_count=1, seed=None):
+        super(AbstractMultiContinuousHyperParameter, self).__init__(name, None, seed)
 
         if sample_count < 1:
             raise ValueError("`sample_count` must be greater than 0.")
@@ -600,9 +612,10 @@ class UniformContinuousHyperParameter(AbstractContinuousHyperParameter):
         log_encode (bool): Determines whether the encoding must be in natural
             log-space or not.
     """
-    def __init__(self, name, min_value, max_value, log_encode=False):
+    def __init__(self, name, min_value, max_value, log_encode=False, seed=None):
 
-        super(UniformContinuousHyperParameter, self).__init__(name, min_value, max_value, log_encode)
+        super(UniformContinuousHyperParameter, self).__init__(name, min_value, max_value,
+                                                              log_encode, seed)
 
     def sample(self):
         """
@@ -611,7 +624,7 @@ class UniformContinuousHyperParameter(AbstractContinuousHyperParameter):
         # Returns:
             float.
         """
-        value = np.random.uniform(self._val1, self._val2, size=1)[0]
+        value = self.random.uniform(self._val1, self._val2, size=1)[0]
         return value
 
     def get_config(self):
@@ -658,10 +671,11 @@ class MultiUniformContinuousHyperParameter(AbstractMultiContinuousHyperParameter
     # Raises:
         ValueErroe: If sample count is less than 1.
     """
-    def __init__(self, name, min_value, max_value, log_encode=False, sample_count=1):
+    def __init__(self, name, min_value, max_value, log_encode=False, sample_count=1, seed=None):
 
         super(MultiUniformContinuousHyperParameter, self).__init__(name, min_value, max_value,
-                                                                   log_encode, sample_count)
+                                                                   log_encode, sample_count,
+                                                                   seed)
 
     def sample(self):
         """
@@ -670,7 +684,7 @@ class MultiUniformContinuousHyperParameter(AbstractMultiContinuousHyperParameter
         # Returns:
             list of floats.
         """
-        value = np.random.uniform(self._val1, self._val2, size=self.sample_count).tolist()
+        value = self.random.uniform(self._val1, self._val2, size=self.sample_count).tolist()
         return value
 
     def get_config(self):
@@ -708,8 +722,8 @@ class NormalContinuousHyperParameter(AbstractContinuousHyperParameter):
         mean (float): The mean of the normal distribution.
         std (float): The standard deviation of the normal distribution.
     """
-    def __init__(self, name, mean, std):
-        super(NormalContinuousHyperParameter, self).__init__(name, mean, std, False)
+    def __init__(self, name, mean, std, seed=None):
+        super(NormalContinuousHyperParameter, self).__init__(name, mean, std, False, seed)
 
     def sample(self):
         """
@@ -719,7 +733,7 @@ class NormalContinuousHyperParameter(AbstractContinuousHyperParameter):
         # Returns:
             float.
         """
-        value = np.random.normal(self._val1, self._val2, size=1)[0]
+        value = self.random.normal(self._val1, self._val2, size=1)[0]
         return value
 
     def get_config(self):
@@ -761,9 +775,10 @@ class MultiNormalContinuousHyperParameter(AbstractMultiContinuousHyperParameter)
     # Raises:
         ValueErroe: If sample count is less than 1.
     """
-    def __init__(self, name, mean, std, sample_count=1):
+    def __init__(self, name, mean, std, sample_count=1, seed=None):
         super(MultiNormalContinuousHyperParameter, self).__init__(name, mean, std,
-                                                                  False, sample_count)
+                                                                  False, sample_count,
+                                                                  seed)
 
     def sample(self):
         """
@@ -773,7 +788,7 @@ class MultiNormalContinuousHyperParameter(AbstractMultiContinuousHyperParameter)
         # Returns:
             list of float.
         """
-        value = np.random.normal(self._val1, self._val2, size=self.sample_count).tolist()
+        value = self.random.normal(self._val1, self._val2, size=self.sample_count).tolist()
         return value
 
     def get_config(self):
@@ -810,11 +825,12 @@ class HyperParameterList(AbstractHyperParameter):
         hyper_parameter_list (list(AnstractHyperParameter) | None): A list of
             hyper parameters or None (which initializes this with 0 elements).
     """
-    def __init__(self, hyper_parameter_list=None):
-        super(HyperParameterList, self).__init__('parameter_list', None)
+    def __init__(self, hyper_parameter_list=None, seed=None):
+        super(HyperParameterList, self).__init__('parameter_list', None, seed)
         self.name_map = OrderedDict()
 
         self._build_maps(hyper_parameter_list)
+        self.set_seed(seed)
 
     def sample(self):
         """
@@ -971,6 +987,21 @@ class HyperParameterList(AbstractHyperParameter):
             config[name] = [class_name, param_config]
 
         return config
+
+    def set_seed(self, seed):
+        """
+        Sets the seed of all the parameters held by the container.
+
+        # Arguments:
+            seed (int | None): Seed value for the random state.
+        """
+        super(HyperParameterList, self).set_seed(seed)
+
+        for param in self.id2param.values():  # type: (AbstractHyperParameter)
+            param.set_seed(seed)
+
+            if seed is not None:
+                seed += 1
 
     @classmethod
     def load_from_config(cls, config):

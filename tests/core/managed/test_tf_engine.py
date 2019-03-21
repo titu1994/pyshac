@@ -400,6 +400,8 @@ def test_shac_simple_custom_basepath():
                                  num_batches=batch_size, objective=objective,
                                  save_dir='custom')
 
+    shac.set_seed(0)
+
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
     assert shac._per_classifier_budget == 10
     assert shac.num_workers == 10
@@ -426,6 +428,8 @@ def test_shac_simple_custom_basepath():
 
     shac2.restore_data()
 
+    shac2.set_seed(0)
+
     # test no file found, yet no error
     shutil.rmtree('custom/')
 
@@ -445,6 +449,8 @@ def test_shac_simple_early_stop():
 
     shac = engine.TensorflowSHAC(h, total_budget=total_budget, max_gpu_evaluators=1,
                                  num_batches=batch_size, objective=objective)
+
+    shac.set_seed(0)
 
     assert shac.total_classifiers == min(max(batch_size - 1, 1), 18)
     assert shac._per_classifier_budget == 5

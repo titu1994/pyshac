@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import warnings
 from abc import ABCMeta, abstractmethod
+from contextlib import contextmanager
 
 import numpy as np
 import pandas as pd
@@ -620,8 +621,6 @@ class _SHAC(ABC):
         # Returns:
             List of encoded sample value
         """
-        np.random.RandomState(None)
-
         # If there are no classifiers, simply sample and pass through.
         if len(self.classifiers) == 0:
             sample = self.parameters.sample()
@@ -671,9 +670,6 @@ class _SHAC(ABC):
                         warnings.warn("Could not find a sample after %d checks. "
                                       "You should consider using `relax_checks` to reduce "
                                       "this constraint or wait it out." % (total_count))
-
-                    # Reset the random seed
-                    np.random.RandomState(np.random.randint(0, 32767, size=5))
 
                     counter = 0
                 else:
@@ -907,6 +903,36 @@ class _SHAC(ABC):
             ))
 
         print()
+
+    def set_seed(self, seed):
+        """
+        Sets the seed of the parameters and the engine.
+
+        # Arguments:
+            seed (int | None): Seed value of the random state.
+        """
+        if self.parameters is not None:
+            self.parameters.set_seed(seed)
+
+        else:
+            warnings.warn("Could not find parameters to set the seed !")
+
+    @contextmanager
+    def as_seeded(self, seed):
+        """
+        Context manager that sets the seed of the parameters
+        and the engine only inside the context block.
+
+        # Arguments:
+            seed (int | None): Seed value of the random state.
+        """
+        try:
+            print("Setting seed value : ", seed)
+            self.set_seed(seed)
+            yield self
+
+        finally:
+            self.set_seed(None)
 
     def parallel_evaluators(self):
         """

@@ -78,7 +78,7 @@ def test_evaluate_single_sample():
 @xgb_wrapper
 def test_evaluate_train_evaluate():
     params = get_hyperparameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     dataset = data.Dataset(h)
 

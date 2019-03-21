@@ -125,24 +125,22 @@ These parameters can be easily defined as :
 import numpy as np
 import pyshac
 
-if __name__ == '__main__':  # this is required for Windows ; not for Unix or Linux
+# define the parameters
+param_x = pyshac.UniformContinuousHyperParameter('x', -5.0, 5.0)
+param_y = pyshac.UniformContinuousHyperParameter('y', -2.0, 2.0)
 
-    # define the parameters
-    param_x = pyshac.UniformContinuousHyperParameter('x', -5.0, 5.0)
-    param_y = pyshac.UniformContinuousHyperParameter('y', -2.0, 2.0)
+parameters = [param_x, param_y]
 
-    parameters = [param_x, param_y]
+# define the total budget as 100 evaluations
+total_budget = 100  # 100 evaluations at maximum
 
-    # define the total budget as 100 evaluations
-    total_budget = 100  # 100 evaluations at maximum
+# define the number of batches
+num_batches = 10  # 10 samples per batch
 
-    # define the number of batches
-    num_batches = 10  # 10 samples per batch
+# define the objective
+objective = 'min'  # minimize the squared loss
 
-    # define the objective
-    objective = 'min'  # minimize the squared loss
-
-    shac = pyshac.SHAC(parameters, total_budget, num_batches, objective)
+shac = pyshac.SHAC(parameters, total_budget, num_batches, objective)
 ```
 
 While this looks like a lot, these few lines are in essence all that is required to define the search space,

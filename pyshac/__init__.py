@@ -9,4 +9,4 @@ from pyshac.config.hyperparameters import HyperParameterList
 from pyshac.config.data import Dataset, flatten_parameters
 from pyshac.core.engine import SHAC
 
-__version__ = '0.3.4.1'
+__version__ = '0.3.5.0'

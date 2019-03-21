@@ -445,8 +445,8 @@ def test_dataset_serialization_deserialization_custom_basepath():
 def test_dataset_serialization_deserialization_custom_param():
     class MockDiscreteHyperParameter(hp.DiscreteHyperParameter):
 
-        def __init__(self, name, values):
-            super(MockDiscreteHyperParameter, self).__init__(name, values)
+        def __init__(self, name, values, seed=None):
+            super(MockDiscreteHyperParameter, self).__init__(name, values, seed)
 
     # register the new hyper parameters
     hp.set_custom_parameter_class(MockDiscreteHyperParameter)
@@ -454,7 +454,7 @@ def test_dataset_serialization_deserialization_custom_param():
     params = get_hyperparameter_list()
     params.append(MockDiscreteHyperParameter('mock-param', ['x', 'y']))
 
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     dataset = data.Dataset(h)
 
@@ -610,7 +610,7 @@ def test_dataset_single_multi_encoding_decoding_min():
 @deterministic_test
 def test_dataset_encoding_decoding():
     params = get_hyperparameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     dataset = data.Dataset(h)
 
@@ -619,7 +619,7 @@ def test_dataset_encoding_decoding():
         dataset.add_sample(*sample)
 
     encoded_x, encoded_y = dataset.encode_dataset(objective='min')
-    y_values = [0., 1., 0., 1., 0.]
+    y_values = [0., 0., 0., 1., 1.]
 
     assert encoded_x.shape == (5, 4)
     assert encoded_x.dtype == np.float64
@@ -641,7 +641,7 @@ def test_dataset_encoding_decoding():
     x, y = zip(*samples2)
 
     encoded_x, encoded_y = dataset.encode_dataset(x, y, objective='min')
-    y_values = [0., 0., 1., 1., 0.]
+    y_values = [0., 1., 0., 0., 1.]
 
     assert encoded_x.shape == (5, 4)
     assert encoded_x.dtype == np.float64
@@ -654,7 +654,7 @@ def test_dataset_encoding_decoding():
 @deterministic_test
 def test_dataset_multi_encoding_decoding():
     params = get_multi_parameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     dataset = data.Dataset(h)
 
@@ -663,7 +663,7 @@ def test_dataset_multi_encoding_decoding():
         dataset.add_sample(*sample)
 
     encoded_x, encoded_y = dataset.encode_dataset(objective='min')
-    y_values = [0., 0., 1., 0., 1.]
+    y_values = [0., 0., 0., 1., 1.]
 
     assert encoded_x.shape == (5, 14)
     assert encoded_x.dtype == np.float64
@@ -685,7 +685,7 @@ def test_dataset_multi_encoding_decoding():
     x, y = zip(*samples2)
 
     encoded_x, encoded_y = dataset.encode_dataset(x, y, objective='min')
-    y_values = [0., 1., 0., 1., 0.]
+    y_values = [0., 1., 0., 0., 1.]
 
     assert encoded_x.shape == (5, 14)
     assert encoded_x.dtype == np.float64
@@ -698,7 +698,7 @@ def test_dataset_multi_encoding_decoding():
 @deterministic_test
 def test_dataset_encoding_decoding_min():
     params = get_hyperparameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     dataset = data.Dataset(h)
 
@@ -707,7 +707,7 @@ def test_dataset_encoding_decoding_min():
         dataset.add_sample(*sample)
 
     encoded_x, encoded_y = dataset.encode_dataset(objective='min')
-    y_values = [0., 1., 0., 1., 0.]
+    y_values = [0., 0., 0., 1., 1.]
 
     assert encoded_x.shape == (5, 4)
     assert encoded_x.dtype == np.float64
@@ -727,7 +727,7 @@ def test_dataset_encoding_decoding_min():
     x, y = zip(*samples2)
 
     encoded_x, encoded_y = dataset.encode_dataset(x, y, objective='min')
-    y_values = [0., 0., 1., 1., 0.]
+    y_values = [0., 1., 0., 0., 1.]
 
     assert encoded_x.shape == (5, 4)
     assert encoded_x.dtype == np.float64
@@ -740,7 +740,7 @@ def test_dataset_encoding_decoding_min():
 @deterministic_test
 def test_dataset_multi_encoding_decoding_min():
     params = get_multi_parameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     dataset = data.Dataset(h)
 
@@ -749,7 +749,7 @@ def test_dataset_multi_encoding_decoding_min():
         dataset.add_sample(*sample)
 
     encoded_x, encoded_y = dataset.encode_dataset(objective='min')
-    y_values = [0., 0., 1., 0., 1.]
+    y_values = [0., 0., 0., 1., 1.]
 
     assert encoded_x.shape == (5, 14)
     assert encoded_x.dtype == np.float64
@@ -769,7 +769,7 @@ def test_dataset_multi_encoding_decoding_min():
     x, y = zip(*samples2)
 
     encoded_x, encoded_y = dataset.encode_dataset(x, y, objective='min')
-    y_values = [0., 1., 0., 1., 0.]
+    y_values = [0., 1., 0., 0., 1.]
 
     assert encoded_x.shape == (5, 14)
     assert encoded_x.dtype == np.float64

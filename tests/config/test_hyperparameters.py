@@ -1,6 +1,6 @@
 import numpy as np
-import six
 import pytest
+import six
 
 import pyshac.config.hyperparameters as hp
 
@@ -73,11 +73,10 @@ def test_discrete_sample():
     assert np.all(counts > 0)
 
 
-@deterministic_test
 def test_discrete_encode_decode():
     values = [10, 11, 12, 13, 14]
 
-    h1 = hp.DiscreteHyperParameter('h1', values)
+    h1 = hp.DiscreteHyperParameter('h1', values, seed=0)
     sample = h1.sample()
 
     encoded = h1.encode(sample)
@@ -88,7 +87,7 @@ def test_discrete_encode_decode():
 
     # Test for None input
     values = [None, 1, 2, 3]
-    h2 = hp.DiscreteHyperParameter('h1', values)
+    h2 = hp.DiscreteHyperParameter('h1', values, seed=0)
     sample = None
 
     encoded = h2.encode(sample)
@@ -153,11 +152,10 @@ def test_multi_discrete_sample():
     assert np.all(counts > 0)
 
 
-@deterministic_test
 def test_multi_discrete_encode_decode():
     values = [10, 11, 12, 13, 14]
 
-    h1 = hp.MultiDiscreteHyperParameter('h1', values, sample_count=5)
+    h1 = hp.MultiDiscreteHyperParameter('h1', values, sample_count=5, seed=0)
     sample = h1.sample()
 
     encoded = h1.encode(sample)
@@ -169,11 +167,11 @@ def test_multi_discrete_encode_decode():
 
     # Test for None input
     values = [None, 1, 2, 3]
-    h2 = hp.MultiDiscreteHyperParameter('h1', values, sample_count=10)
+    h2 = hp.MultiDiscreteHyperParameter('h1', values, sample_count=10, seed=0)
     sample = h2.sample()
 
     encoded = h2.encode(sample)
-    assert encoded == [3, 1, 3, 1, 2, 0, 3, 2, 0, 0]
+    assert encoded == [0, 3, 1, 0, 3, 3, 3, 3, 1, 3]
 
     decoded = h2.decode(encoded)
     for i in range(len(decoded)):
@@ -428,11 +426,11 @@ def test_continuous_multi_uniform_encode_decode():
     assert decoded == sample
 
 
-@deterministic_test
 def test_continuous_uniform_encode_decode_log_space():
     h1 = hp.MultiUniformContinuousHyperParameter('h1', 0.0, 1.0,
                                                  log_encode=True,
-                                                 sample_count=3)
+                                                 sample_count=3,
+                                                 seed=0)
     sample = h1.sample()
 
     encoded = h1.encode(sample)
@@ -770,14 +768,36 @@ def test_list_sample():
     assert len(sample) == 14
 
 
-@deterministic_test
+def test_list_sample_seeded():
+    params = get_hyperparameter_list()
+    h = hp.HyperParameterList(params, seed=0)
+
+    sample = h.sample()
+    assert len(sample) == 4
+    assert sample == [0, 4, 8.307984706426012, 'v1']
+
+    # Multi parameter tests
+    params = get_multi_parameter_list()
+    h = hp.HyperParameterList(params, seed=0)
+
+    sample = h.sample()
+    assert len(sample) == 14
+    assert sample == [0, 1, 4, 6, 3,
+                      8.307984706426012,
+                      7.077778695483674,
+                      8.648987433636128,
+                      8.30596717785483,
+                      8.261103406262468,
+                      'v1', 'v1', 'v2', 'v2']
+
+
 def test_list_encoded_decoded():
     params = get_hyperparameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     sample = h.sample()
     encoded = h.encode(sample)
-    encoding = [0., 3., 9.1455681, 1.]
+    encoding = [0., 1., 8.30798471, 0.]
     assert np.allclose(encoded, encoding, rtol=1e-5)
 
     decoded = h.decode(encoded)
@@ -787,14 +807,15 @@ def test_list_encoded_decoded():
 
     # Multi parameter tests
     params = get_multi_parameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     sample = h.sample()
     encoded = h.encode(sample)
-    encoding = [1., 1., 2., 0., 3.,
-                9.675319, 9.89098828,
-                8.15032456, 9.37517511,
-                8.58668476, 0., 1., 1., 1.]
+    encoding = [0., 1., 1., 3., 0.,
+                8.30798471, 7.0777787,
+                8.64898743, 8.30596718, 8.26110341,
+                0., 0., 1., 1.]
+    print(encoded)
     assert np.allclose(encoded, encoding, rtol=1e-5)
 
     decoded = h.decode(encoded)
@@ -803,14 +824,13 @@ def test_list_encoded_decoded():
     assert np.allclose(decoded_, sample_, rtol=1e-5)
 
 
-@deterministic_test
 def test_list_encoded_decoded_numpy():
     params = get_hyperparameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     sample = np.array(h.sample())
     encoded = h.encode(sample)
-    encoding = [0., 3., 9.1455681, 1.]
+    encoding = [0., 1., 8.30798471, 0]
     assert np.allclose(encoded, encoding, rtol=1e-5)
 
     decoded = np.array(h.decode(encoded))
@@ -825,13 +845,14 @@ def test_list_encoded_decoded_numpy():
 
     # Multi parameter tests
     params = get_multi_parameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     sample = np.array(h.sample())
     encoded = h.encode(sample)
-    encoding = [2., 0., 0., 0., 2.,
-                8.43299535, 9.43650619, 8.43993152,
-                8.17835439, 9.50823629, 0., 1., 0., 1.]
+    encoding = [0., 1., 1., 3., 0.,
+                8.30798471, 7.0777787,
+                8.64898743, 8.30596718, 8.26110341,
+                0., 0., 1., 1.]
     assert np.allclose(encoded, encoding, rtol=1e-5)
 
     decoded = np.array(h.decode(encoded))
@@ -847,7 +868,7 @@ def test_list_encoded_decoded_numpy():
 
 def test_list_serialization_deserialization():
     params = get_hyperparameter_list()
-    h = hp.HyperParameterList(params)
+    h = hp.HyperParameterList(params, seed=0)
 
     config = h.get_config()
     assert len(config) == len(h.name_map)

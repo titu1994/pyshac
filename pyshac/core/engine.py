@@ -918,7 +918,7 @@ class _SHAC(ABC):
             warnings.warn("Could not find parameters to set the seed !")
 
     @contextmanager
-    def as_seeded(self, seed):
+    def as_deterministic(self, seed):
         """
         Context manager that sets the seed of the parameters
         and the engine only inside the context block.
@@ -927,12 +927,15 @@ class _SHAC(ABC):
             seed (int | None): Seed value of the random state.
         """
         try:
-            print("Setting seed value : ", seed)
             self.set_seed(seed)
             yield self
 
         finally:
-            self.set_seed(None)
+            if self.parameters is not None:
+                self.set_seed(self.parameters.seed)
+
+            else:
+                self.set_seed(None)
 
     def parallel_evaluators(self):
         """

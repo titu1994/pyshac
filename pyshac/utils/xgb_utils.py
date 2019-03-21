@@ -19,7 +19,7 @@ def get_classifier(num_trees=200, n_jobs=1, seed=None):
     Returns:
          xgb.XGBClassifier
     """
-    model = xgb.XGBClassifier(n_estimators=num_trees, random_state=seed, seed=seed, n_jobs=n_jobs)
+    model = xgb.XGBClassifier(n_estimators=num_trees, random_state=seed, n_jobs=n_jobs)
     return model
 
 

@@ -492,7 +492,7 @@ def test_shac_simple_seeded_manually():
 
     shac2.restore_data()
 
-    with shac2.as_seeded(1):
+    with shac2.as_deterministic(1):
         predictions = shac2.predict(num_batches=20, num_workers_per_batch=1)
     pred_evals = [evaluation_simple(0, pred) for pred in predictions]
     pred_mean = np.mean(pred_evals)
@@ -514,11 +514,11 @@ def test_shac_simple_seeded_manually():
     assert len(evals) > 1
 
     # Test if two predictions are same with two evals of same seed
-    with shac2.as_seeded(0):
+    with shac2.as_deterministic(0):
         predictions = shac2.predict(num_batches=20, num_workers_per_batch=1)
         pred_evals1 = [evaluation_simple(0, pred) for pred in predictions]
 
-    with shac2.as_seeded(0):
+    with shac2.as_deterministic(0):
         predictions = shac2.predict(num_batches=20, num_workers_per_batch=1)
         pred_evals2 = [evaluation_simple(0, pred) for pred in predictions]
 

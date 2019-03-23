@@ -36,6 +36,7 @@ pages:
 - User Guide: guide.md
 - Serial Evaluation: serial-execution.md
 - Managed Engines: managed.md
+- Deterministic Engines: deterministic.md
 - Custom Hyper Parameters: custom-hyper-parameters.md
 - External Dataset Training: external-dataset-training.md
 - Callbacks: callbacks.md

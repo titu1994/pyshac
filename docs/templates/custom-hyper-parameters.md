@@ -41,15 +41,20 @@ from pyshac.config.hyperparameters import AbstractContinuousHyperParameter
 
 class CustomUniformHP(AbstractContinuousHyperParameter):
 
-    def __init__(self, name, min_value, max_value):
-        super(CustomUniformHP, self).__init__(name, min_value, max_value)
+    def __init__(self, name, min_value, max_value, seed=None):
+        super(CustomUniformHP, self).__init__(name, min_value, max_value, seed)
 
     def sample(self):
         """
         Here, self._val1 and self._val2 are the private members of `AbstractContinuousHyperParameters`,
         which represent the range that this distribution can be sampled from.
+
+        `self.random` is a seeded / non-seeded numpy `RandomState` object,
+        which must be used to perform any operations such as sampling or
+        selection. Using `self.random` along with the `seed` value in the
+        constructor allows for deterministic behaviour if required.
         """
-        value = np.random.uniform(self._val1, self._val2, size=1)[0]
+        value = self.random.uniform(self._val1, self._val2, size=1)[0]
         return value
 
     def get_config(self):

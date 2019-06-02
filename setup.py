@@ -33,7 +33,8 @@ setup(
                       'loky>=2.4.2',
                       'cloudpickle>=1.1.1',
                       'six>=1.11.0',
-                      'xgboost>=0.90',
+                      'xgboost==0.80; python_version < "2.7"',
+                      'xgboost>=0.90; python_version > "3.0"'
                       'matplotlib>=3.0.0; python_version > "3.0"'],
     extras_require={
         'tests': ['pytest', 'coverage', 'pytest-cov', 'codecov', 'matplotlib'],

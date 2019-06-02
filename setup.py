@@ -31,9 +31,9 @@ setup(
                       'pandas>=0.23.4',
                       'joblib>=0.13.2',
                       'loky>=2.4.2',
-                      'cloudpickle>=0.8.0',
+                      'cloudpickle>=1.1.1',
                       'six>=1.11.0',
-                      'xgboost>=0.80',
+                      'xgboost>=0.90',
                       'matplotlib>=3.0.0; python_version > "3.0"'],
     extras_require={
         'tests': ['pytest', 'coverage', 'pytest-cov', 'codecov', 'matplotlib'],

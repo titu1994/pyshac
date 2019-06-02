@@ -7,6 +7,7 @@ import sys
 import inspect
 import numpy as np
 import uuid
+import codecs
 
 
 # compatible with Python 2 *and* 3:
@@ -175,7 +176,10 @@ class AbstractHyperParameter(ABC):
         self.seed = seed
 
         if seed is None:
-            seed = int.from_bytes(os.urandom(4), byteorder='little')
+            if six.PY3:
+                seed = int.from_bytes(os.urandom(4), byteorder='little')
+            else:
+                seed = int(codecs.encode(os.urandom(4), 'hex'), 16)
 
         self.random = np.random.RandomState(seed)
 

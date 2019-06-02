@@ -440,6 +440,8 @@ def test_shac_simple_seeded_manually():
     with pytest.raises(ValueError):
         shac.predict(max_classfiers=10)
 
+    shac.set_seed(None)
+
     random_samples = shac.predict(num_samples=None, num_batches=None, num_workers_per_batch=1)  # random sample predictions
     random_eval = [evaluation_simple(0, sample) for sample in random_samples]
     assert len(random_eval) == 1
@@ -462,6 +464,8 @@ def test_shac_simple_seeded_manually():
 
     print()
 
+    shac.set_seed(0)
+
     # training
     shac.fit(evaluation_simple)
 
@@ -471,6 +475,7 @@ def test_shac_simple_seeded_manually():
 
     print()
     print("Evaluating after training")
+    shac.set_seed(None)
     predictions = shac.predict(num_batches=20, num_workers_per_batch=1)
 
     print("Shac preds", predictions)
@@ -511,6 +516,7 @@ def test_shac_simple_seeded_manually():
         else:
             evals[val] = 1
 
+    print(evals)
     assert len(evals) > 1
 
     # Test if two predictions are same with two evals of same seed

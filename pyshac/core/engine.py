@@ -199,6 +199,9 @@ class _SHAC(ABC):
 
         callback_list.on_train_begin({'begin_run_index': begin_run_index})
 
+        global_sample_id = 0
+        param_seed = self.parameters.seed
+
         for run_index in range(begin_run_index, self.total_budget, self.num_workers):
             # initialize logs
             logs = {}
@@ -227,11 +230,15 @@ class _SHAC(ABC):
                           backend=gen_backend, verbose=10, prefer=prefer) as parallel_generator:
 
                 # parallel sample generation
-                samples = parallel_generator(delayed(self._sample_parameters)(relax_checks)
-                                             for _ in range(self.num_workers))
+                samples = parallel_generator(delayed(self._sample_parameters)(param_seed,
+                                                                              global_sample_id + sample_id,
+                                                                              relax_checks)
+                                             for sample_id in range(self.num_workers))
 
                 params = parallel_generator(delayed(self.dataset.prepare_parameter)(smpl)
                                             for smpl in samples)
+
+                global_sample_id += len(samples)
 
                 print("Finished generating %d samples" % len(samples))
 
@@ -581,22 +588,27 @@ class _SHAC(ABC):
         with Parallel(generator_threads, temp_folder=self.temp_dir, verbose=10,
                       backend=gen_backend, prefer=prefer) as parallel_generator:
 
+            param_seed = self.parameters.seed
             sample_list = []
+
             for run_index in range(0, sample_count, generator_threads):
                 count = min(sample_count - run_index, generator_threads)
 
-                samples = parallel_generator(delayed(self._sample_parameters)(relax_checks,
+                samples = parallel_generator(delayed(self._sample_parameters)(param_seed,
+                                                                              sample_id,
+                                                                              relax_checks,
                                                                               max_classfiers)
-                                             for _ in range(count))
+                                             for sample_id in range(count))
 
                 params = parallel_generator(delayed(self.dataset.prepare_parameter)(smpl)
                                             for smpl in samples)
 
+                self.parameters.set_seed(param_seed)
                 sample_list.extend(params)
 
         return sample_list
 
-    def _sample_parameters(self, relax_checks=False, max_classifiers=None):
+    def _sample_parameters(self, global_seed, sample_id, relax_checks=False, max_classifiers=None):
         """
         Samples the underlying hyper parameters, checks if the sample passes through all
         of the classifiers, and only then submits it for evaluation.
@@ -611,6 +623,9 @@ class _SHAC(ABC):
         same random seed.
 
         # Arguments:
+            global_seed (int): Integer id that belongs to the parameter list.
+            sample_id (int): Integer id that defines the sample index
+                unique to this sample. Used for seeding.
             relax_checks (bool): If set, will allow samples who do not pass all of the
                 checks from all classifiers. Can be useful when large number of models
                 are present and remaining search space is not big enough to allow sample
@@ -622,6 +637,11 @@ class _SHAC(ABC):
             List of encoded sample value
         """
         # If there are no classifiers, simply sample and pass through.
+        if global_seed is None:
+            self.parameters.set_seed(None)
+        else:
+            self.parameters.set_seed((global_seed + sample_id) % (int(1e9)))
+
         if len(self.classifiers) == 0:
             sample = self.parameters.sample()
         else:

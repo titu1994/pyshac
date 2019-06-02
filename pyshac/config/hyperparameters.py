@@ -1,3 +1,4 @@
+import os
 from abc import ABCMeta, abstractmethod
 from collections import OrderedDict
 from collections import Iterable
@@ -172,6 +173,10 @@ class AbstractHyperParameter(ABC):
             seed (int | None): Random seed value.
         """
         self.seed = seed
+
+        if seed is None:
+            seed = int.from_bytes(os.urandom(4), byteorder='little')
+
         self.random = np.random.RandomState(seed)
 
     def __repr__(self):

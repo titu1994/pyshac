@@ -42,7 +42,7 @@ def train_single_model(encoded_samples, labels, num_splits=5, n_jobs=1):
         model = get_classifier(n_jobs=n_jobs, seed=random_seed)
 
         if num_splits > 1:
-            kfold = StratifiedKFold(n_splits=num_splits, random_state=0)
+            kfold = StratifiedKFold(n_splits=num_splits, random_state=0, shuffle=True)
             scores = cross_val_score(model, encoded_samples, labels, cv=kfold, n_jobs=1)
             score = np.mean(scores)
 
